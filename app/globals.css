@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #0f62fe;
+  --primary-dark: #0043ce;
+  --tertiary: #198038;
+  --error: #da1e28;
+  --on-surface: #161616;
+  --on-surface-variant: #525252;
+  --outline: #8d8d8d;
+  --outline-variant: #e0e0e0;
+  --surface: #ffffff;
+  --surface-container: #f4f4f4;
+}
+
+* {
+  border-radius: 0 !important;
+}
+
+body {
+  color: var(--on-surface);
+  background: var(--surface-container);
+}
+
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
+}
