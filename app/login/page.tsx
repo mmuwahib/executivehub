@@ -23,8 +23,10 @@ export default function LoginPage() {
       if (res.ok) {
         router.push("/");
         router.refresh();
-      } else {
+      } else if (res.status === 401) {
         setError("Incorrect password.");
+      } else {
+        setError("Authentication service unavailable. Is the Functions host running?");
       }
     } catch {
       setError("Unable to reach authentication service.");
@@ -34,33 +36,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-container px-4">
-      <div className="w-full max-w-sm bg-surface border border-outline-variant p-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+      <div className="w-full max-w-sm glass-card rounded-lg p-8">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[20px] font-bold text-on-surface tracking-tight">
-            ATC <span className="font-light">Intelligence</span>
-          </span>
+          <span className="text-headline-md font-bold text-ink tracking-tight">Gulf Cryo</span>
         </div>
-        <p className="text-[13px] text-on-surface-variant mb-6">
-          Enter the dashboard password to continue.
+        <p className="font-mono text-[10px] text-accent/70 tracking-widest uppercase mb-6">
+          Executive Intelligence
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center border border-outline-variant px-3 py-2 gap-2">
-            <Lock size={16} className="text-on-surface-variant" />
+          <div className="flex items-center border border-border px-3 py-2 gap-2 rounded">
+            <Lock size={16} className="text-ink-faint" />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full bg-transparent outline-none text-[14px] text-on-surface"
+              className="w-full bg-transparent outline-none text-sm text-ink"
               autoFocus
             />
           </div>
-          {error && <p className="text-[12px] text-error">{error}</p>}
+          {error && <p className="text-[12px] text-danger">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white text-[14px] py-3 font-medium hover:bg-primary-dark transition-colors disabled:opacity-60"
+            className="w-full bg-accent text-accent-on text-sm font-semibold py-3 rounded hover:brightness-110 transition-all disabled:opacity-60"
           >
             {loading ? "Verifying..." : "Sign in"}
           </button>

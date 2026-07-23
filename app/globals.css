@@ -2,31 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Colour variables below are space-separated RGB triplets (no rgb()/hex
+ * wrapper) so Tailwind's opacity modifiers (e.g. bg-accent/10) work via the
+ * withOpacity() helper in tailwind.config.ts: rgb(var(--x) / <alpha-value>).
+ * border/border-strong and the glow/glass-hover vars are the exception —
+ * they're used as fixed, pre-composed translucent values directly in CSS,
+ * not through Tailwind's color-opacity system.
+ */
+
+/* Dark theme (default) — Cryo Intelligence Command palette */
 :root {
-  --primary: #0f62fe;
-  --primary-dark: #0043ce;
-  --tertiary: #198038;
-  --error: #da1e28;
-  --on-surface: #161616;
-  --on-surface-variant: #525252;
-  --outline: #8d8d8d;
-  --outline-variant: #e0e0e0;
-  --surface: #ffffff;
-  --surface-container: #f4f4f4;
+  color-scheme: dark;
+
+  --color-canvas: 15 18 22;
+  --color-surface: 21 26 32;
+  --color-surface-low: 27 33 41;
+  --color-panel: 31 38 46;
+  --color-panel-high: 39 47 57;
+  --color-panel-highest: 49 59 70;
+  --color-floor: 10 13 17;
+  --color-bright: 58 67 78;
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+
+  --color-ink: 238 241 244;
+  --color-ink-muted: 154 163 171;
+  --color-ink-faint: 107 116 128;
+
+  /* Gulf Cryo Blue, brightened for legibility on dark surfaces */
+  --color-accent: 97 129 180;
+  --color-accent-soft: 54 88 136;
+  --color-accent-on: 255 255 255;
+  --color-cyan: 97 129 180;
+  --color-cyan-soft: 158 174 202;
+
+  --color-warning: 217 154 78;
+  --color-warning-deep: 138 90 31;
+  --color-danger: 209 112 122;
+  --color-danger-deep: 122 37 48;
+
+  --color-accent-glow-strong: rgba(97, 129, 180, 0.4);
+  --color-accent-glow-none: rgba(97, 129, 180, 0);
+
+  --color-glass-hover-border: rgba(97, 129, 180, 0.35);
+  --color-glass-hover-bg: rgba(31, 38, 46, 0.6);
+
+  --color-shadow: 0 0 0;
+  --shadow-opacity-1: 0.30;
+  --shadow-opacity-2: 0.42;
+  --card-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 45%);
 }
 
-* {
-  border-radius: 0 !important;
+/* Light theme — Gulf Cryo corporate light palette (Light Grey / white / Dark Grey text) */
+:root.light {
+  color-scheme: light;
+
+  --color-canvas: 231 235 239;
+  --color-surface: 255 255 255;
+  --color-surface-low: 242 244 247;
+  --color-panel: 255 255 255;
+  --color-panel-high: 245 247 249;
+  --color-panel-highest: 231 235 239;
+  --color-floor: 255 255 255;
+  --color-bright: 220 225 230;
+
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.14);
+
+  --color-ink: 32 38 43;
+  --color-ink-muted: 91 94 97;
+  --color-ink-faint: 144 148 150;
+
+  /* Core Gulf Cryo Blue reads fine at full strength against white */
+  --color-accent: 54 88 136;
+  --color-accent-soft: 97 129 180;
+  --color-accent-on: 255 255 255;
+  --color-cyan: 54 88 136;
+  --color-cyan-soft: 97 129 180;
+
+  --color-warning: 181 118 46;
+  --color-warning-deep: 138 90 31;
+  --color-danger: 178 58 69;
+  --color-danger-deep: 122 37 48;
+
+  --color-accent-glow-strong: rgba(54, 88, 136, 0.3);
+  --color-accent-glow-none: rgba(54, 88, 136, 0);
+
+  --color-glass-hover-border: rgba(54, 88, 136, 0.3);
+  --color-glass-hover-bg: rgba(231, 235, 239, 0.6);
+
+  --color-shadow: 30 41 59;
+  --shadow-opacity-1: 0.07;
+  --shadow-opacity-2: 0.12;
+  --card-sheen: none;
 }
 
 body {
-  color: var(--on-surface);
-  background: var(--surface-container);
+  background-color: rgb(var(--color-canvas));
+  background-image: radial-gradient(ellipse 70% 45% at 50% -8%, rgb(var(--color-accent) / 0.10), transparent 60%);
+  background-attachment: fixed;
+  color: rgb(var(--color-ink));
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+@layer components {
+  .glass-card {
+    @apply border border-border backdrop-blur-lg;
+    background-image: var(--card-sheen);
+    background-color: rgb(var(--color-panel) / 0.5);
+    box-shadow: 0 10px 30px -8px rgb(var(--color-shadow) / var(--shadow-opacity-1));
+    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .glass-card:hover {
+    border-color: var(--color-glass-hover-border);
+    background-color: var(--color-glass-hover-bg);
+    box-shadow: 0 16px 40px -8px rgb(var(--color-shadow) / var(--shadow-opacity-2));
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(154, 163, 171, 0.2);
+  border-radius: 2px;
+}
+
+.map-mesh {
+  background-image: radial-gradient(rgba(97, 129, 180, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 @media print {
   aside,
-  header {
+  header,
+  footer {
     display: none !important;
   }
 }

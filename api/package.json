@@ -11,9 +11,9 @@
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.113.0",
     "@azure/functions": "^4.5.1",
-    "@azure/storage-blob": "^12.25.0",
-    "@anthropic-ai/sdk": "^0.32.1"
+    "@azure/storage-blob": "^12.25.0"
   },
   "devDependencies": {
     "@types/node": "^22",

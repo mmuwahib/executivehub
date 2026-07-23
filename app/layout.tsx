@@ -1,20 +1,38 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const ibmPlexSans = IBM_Plex_Sans({
+// Self-hosted at build time by next/font (no runtime request to Google) —
+// gives numeric/data displays a genuine monospace face instead of the
+// Segoe UI fallback, which isn't actually monospaced.
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-ibm-plex-sans",
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "ATC Intelligence",
-  description: "Daily and weekly intelligence dashboard for GulfCryo",
+  title: "Gulf Cryo Executive Intelligence",
+  description: "Executive intelligence dashboard for GulfCryo",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon.png",
   },
 };
+
+// Runs before hydration so the correct theme class is set pre-paint —
+// avoids a flash of the wrong theme on load.
+const THEME_INIT_SCRIPT = `
+(function () {
+  try {
+    var stored = localStorage.getItem("gc-theme");
+    var theme = stored === "light" ? "light" : "dark";
+    document.documentElement.classList.add(theme);
+  } catch (e) {
+    document.documentElement.classList.add("dark");
+  }
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -22,8 +40,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={ibmPlexSans.variable}>
-      <body className="font-sans bg-surface-container text-on-surface antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className={`font-sans bg-canvas text-ink antialiased ${jetbrainsMono.variable}`}>
         {children}
       </body>
     </html>

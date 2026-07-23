@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { readJsonBlob } from "../blobStorage";
-import { DailyDispatch, WeeklyDispatch, MarketsDispatch } from "../types";
+import { DailyData, WeeklyData, MarketsData } from "../types";
 
 const AUTH_COOKIE = "atc-auth";
 
@@ -18,26 +18,33 @@ export async function getDispatch(
   }
 
   const [daily, weekly, markets] = await Promise.all([
-    readJsonBlob<DailyDispatch>("current-daily.json"),
-    readJsonBlob<WeeklyDispatch>("current-weekly.json"),
-    readJsonBlob<MarketsDispatch>("markets-latest.json"),
+    readJsonBlob<DailyData>("current-daily.json"),
+    readJsonBlob<WeeklyData>("current-weekly.json"),
+    readJsonBlob<MarketsData>("markets-latest.json"),
   ]);
 
   if (!daily) {
     return { status: 404, jsonBody: { error: "No daily dispatch available yet." } };
   }
 
-  const merged = {
-    ...daily,
-    markets: markets?.markets ?? daily.markets,
-    weekly: weekly ?? undefined,
+  const bundle = {
+    dashboard: {
+      ...daily.dashboard,
+      marketSeries: markets?.marketSeries ?? [],
+    },
+    geopolitical: daily.geopolitical,
+    industrySummary: weekly?.industrySummary ?? null,
+    projectTracker: weekly?.projectTracker ?? null,
+    techArticles: weekly?.techArticles ?? null,
+    ticker: markets?.ticker ?? [],
+    generated_at: daily.generated_at,
   };
 
-  context.log("getDispatch served merged dispatch");
+  context.log("getDispatch served merged bundle");
 
   return {
     status: 200,
-    jsonBody: merged,
+    jsonBody: bundle,
   };
 }
 

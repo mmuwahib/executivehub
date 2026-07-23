@@ -1,121 +1,80 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  LayoutDashboard,
-  Globe2,
-  LineChart,
-  Factory,
-  Scale,
-  Snowflake,
-  BarChart3,
-  MapPinned,
-  Library,
-} from "lucide-react";
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "geopolitical", label: "Geopolitical", icon: Globe2 },
-  { id: "markets", label: "Markets", icon: LineChart },
-  { id: "energy", label: "Energy & Industrial", icon: Factory },
-  { id: "business", label: "Business & Regulatory", icon: Scale },
-  { id: "gulfcryo", label: "GulfCryo Watch", icon: Snowflake },
-];
-
-const WEEKLY_NAV_ITEMS = [
-  { id: "industry-summary", label: "Industry Summary", icon: BarChart3 },
-  { id: "project-tracker", label: "Project Tracker", icon: MapPinned },
-  { id: "sources", label: "Sources", icon: Library },
-];
-
-function scrollToSection(id: string) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-const ALL_IDS = [...NAV_ITEMS, ...WEEKLY_NAV_ITEMS].map((item) => item.id);
-
-function useActiveSection() {
-  const [active, setActive] = useState("dashboard");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible.length > 0) {
-          setActive(visible[0].target.id);
-        }
-      },
-      { rootMargin: "-10% 0px -70% 0px" }
-    );
-
-    ALL_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  return active;
-}
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Icon } from "@/lib/icons";
+import { NAV_ITEMS, COUNTRIES } from "@/lib/nav";
+import Logo from "@/components/logo";
+import CountryBadge from "@/components/country-badge";
 
 export default function Sidebar() {
-  const active = useActiveSection();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+
+  function handleRefresh() {
+    setRefreshing(true);
+    router.refresh();
+    setTimeout(() => setRefreshing(false), 800);
+  }
 
   return (
-    <aside className="hidden lg:flex flex-col w-[240px] shrink-0 h-screen sticky top-0 bg-surface-container border-r border-outline-variant py-6">
-      <div className="px-4 mb-8">
-        <h1 className="text-[20px] font-semibold text-on-surface">Sector Control</h1>
-        <p className="text-[12px] text-on-surface-variant mt-1 tracking-tight">
-          Vigilance Level: Elevated
-        </p>
+    <aside className="hidden lg:flex fixed left-0 top-0 h-full w-sidebar flex-col z-40 bg-surface-low border-r border-border">
+      <div className="p-6">
+        <Logo variant="full" />
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => scrollToSection(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-r-4 ${
-              active === item.id
-                ? "bg-white text-primary border-primary"
-                : "text-on-surface-variant border-transparent hover:text-on-surface hover:bg-white"
-            }`}
-          >
-            <item.icon size={18} />
-            <span className="text-[14px] font-medium">{item.label}</span>
-          </button>
-        ))}
+      <nav className="flex-1 px-2 mt-2 space-y-1 custom-scrollbar overflow-y-auto">
+        <div className="px-4 py-2 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
+          Core Systems
+        </div>
+        {NAV_ITEMS.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 p-4 transition-all border-l-4 ${
+                active
+                  ? "text-accent font-bold bg-accent/10 border-accent"
+                  : "text-ink-muted border-transparent hover:text-ink hover:bg-panel-highest/50"
+              }`}
+            >
+              <Icon name={item.icon} size={20} />
+              <span className="font-mono text-label-caps">{item.label}</span>
+            </Link>
+          );
+        })}
 
-        <div className="border-t border-outline-variant my-3 mx-4" />
-
-        {WEEKLY_NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => scrollToSection(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left border-r-4 ${
-              active === item.id
-                ? "bg-white text-primary border-primary"
-                : "text-on-surface-variant border-transparent hover:text-on-surface hover:bg-white"
-            }`}
-          >
-            <item.icon size={18} />
-            <span className="text-[14px] font-medium">{item.label}</span>
-          </button>
-        ))}
+        <div className="px-4 py-6 opacity-40 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
+          Countries of Operation
+        </div>
+        <div className="grid grid-cols-2 gap-1 px-2 pb-6">
+          {COUNTRIES.map((country) => (
+            <Link
+              key={country}
+              href={`/project-tracker?country=${encodeURIComponent(country)}`}
+              className="flex items-center gap-2 p-2 text-ink-muted hover:text-accent transition-colors text-[11px] font-mono text-left"
+            >
+              <CountryBadge country={country} className="w-5 h-5 rounded bg-panel-high border border-border text-[8px] text-ink-muted" /> {country}
+            </Link>
+          ))}
+        </div>
       </nav>
 
-      <div className="px-4 mt-4">
+      <div className="p-4 border-t border-border">
         <button
-          onClick={() => window.print()}
-          className="w-full bg-primary text-white text-[14px] py-3 font-medium hover:bg-primary-dark transition-colors"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="w-full py-3 bg-accent/10 border border-accent/30 text-accent font-mono text-[11px] tracking-widest hover:bg-accent/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-60"
         >
-          Generate Report
+          <Icon
+            name="sync"
+            size={16}
+            className={`transition-transform ${refreshing ? "animate-spin" : "group-hover:rotate-180"}`}
+          />
+          {refreshing ? "REFRESHING..." : "REFRESH FEEDS"}
         </button>
       </div>
     </aside>

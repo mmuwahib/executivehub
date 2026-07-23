@@ -1,8 +1,8 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { MarketsDispatch } from "../types";
+import { MarketsData } from "../types";
 
-async function fetchMarketData(): Promise<MarketsDispatch> {
+async function fetchMarketData(): Promise<MarketsData> {
   const apiUrl = process.env.MARKET_API_URL;
   const apiKey = process.env.MARKET_API_KEY;
 
@@ -22,10 +22,12 @@ async function fetchMarketData(): Promise<MarketsDispatch> {
 
   const data = await response.json();
 
-  // TODO: map the provider's response shape into MarketRow[] once the real API is selected.
+  // TODO: map the provider's response shape into MarketSeries[]/TickerItem[]
+  // once the real market data API is selected.
   return {
-    markets: data.markets ?? [],
     generated_at: new Date().toISOString(),
+    marketSeries: data.marketSeries ?? [],
+    ticker: data.ticker ?? [],
   };
 }
 
@@ -33,8 +35,8 @@ export async function marketRefresh(myTimer: Timer, context: InvocationContext):
   context.log("marketRefresh triggered at", new Date().toISOString());
 
   try {
-    const dispatch = await fetchMarketData();
-    await writeJsonBlob("markets-latest.json", dispatch);
+    const data = await fetchMarketData();
+    await writeJsonBlob("markets-latest.json", data);
     context.log("marketRefresh complete");
   } catch (err) {
     context.error("marketRefresh failed:", err);

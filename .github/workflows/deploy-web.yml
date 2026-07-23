@@ -1,0 +1,44 @@
+name: Deploy Web App to Azure App Service
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "api/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run build
+
+      # next start needs node_modules at runtime (no standalone output
+      # configured), so prune dev deps after build rather than before.
+      - name: Prune dev dependencies
+        run: npm prune --omit=dev
+
+      # Stage only what the running app needs — keeps api/ (a separate
+      # deploy target with its own package.json) out of this package.
+      - name: Stage deployment package
+        run: |
+          mkdir deploy
+          cp -r .next public package.json package-lock.json next.config.js node_modules deploy/
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: deploy
