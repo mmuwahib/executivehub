@@ -123,7 +123,7 @@ export default async function MainDashboardPage({
                   rel="noopener noreferrer"
                   className="flex flex-col gap-3 group"
                 >
-                  <VisualTile icon="factory" tone={item.tone} image={item.image} className="aspect-video rounded">
+                  <VisualTile icon="factory" tone={item.tone} image={item.image} alt={item.title} className="aspect-video rounded">
                     <div
                       className={`absolute top-2 left-2 px-2 py-1 font-mono text-[10px] font-bold ${TONE_BG[item.tone]} text-accent-on`}
                     >

@@ -96,7 +96,7 @@ export default function RiskMap({
       </svg>
 
       {/* Severity legend — top right */}
-      <div className="absolute top-4 right-4 glass-card rounded p-3 w-40 z-10">
+      <div className="absolute top-4 right-4 glass-card rounded p-3 w-32 sm:w-40 z-10">
         <div className="font-mono text-[10px] text-ink-faint tracking-wide mb-2">SEVERITY</div>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-[11px] font-mono text-ink">
@@ -115,7 +115,7 @@ export default function RiskMap({
       </div>
 
       {/* Hot zone detail card — bottom left */}
-      <div className="absolute bottom-4 left-4 glass-card p-4 rounded border-accent/30 w-64 z-10">
+      <div className="absolute bottom-4 left-4 glass-card p-4 rounded border-accent/30 w-48 sm:w-64 z-10">
         <div className="font-mono text-[10px] text-accent mb-1">HOT ZONE DETECTED</div>
         <div className="text-headline-sm text-ink mb-2">{hotZone.name}</div>
         <p className="text-[11px] text-ink-muted leading-relaxed">

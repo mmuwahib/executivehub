@@ -158,7 +158,7 @@ export default async function ProjectTrackerPage({
         )}
         {filteredProjects.map((project) => (
           <div key={project.title} className="col-span-12 lg:col-span-6 glass-card rounded-xl overflow-hidden group">
-            <VisualTile icon={project.icon} tone={project.statusTone} image={project.image}>
+            <VisualTile icon={project.icon} tone={project.statusTone} image={project.image} alt={project.title}>
               {project.atcConnection && (
                 <div className="absolute top-4 right-4 bg-accent/20 backdrop-blur-md border border-accent/40 px-3 py-1 rounded text-[10px] font-mono text-accent flex items-center gap-2">
                   <Icon name="link" size={14} /> ATC CONNECTION

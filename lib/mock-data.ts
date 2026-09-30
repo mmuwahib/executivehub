@@ -301,7 +301,6 @@ export const projectTrackerData: ProjectTrackerData = {
       quote: "Grid synchronization completed. Pipe laying at 84% capacity.",
       atcConnection: true,
       icon: "eco",
-      image: "/photos/wind-desert.jpg",
       category: "renewable",
     },
     {
@@ -327,7 +326,6 @@ export const projectTrackerData: ProjectTrackerData = {
       quote: "Full capacity reached. Telemetry integrated with ATC.",
       atcConnection: true,
       icon: "waves",
-      image: "/photos/water-treatment.jpg",
       category: "sustainability",
     },
     {
@@ -400,7 +398,6 @@ export const techArticles: TechArticle[] = [
     sourceUrl: outletUrl("Gasworld Fleet Insight"),
     size: "wide",
     icon: "sensors",
-    image: "/photos/cylinder-factory.jpg",
     region: "Americas",
   },
   {

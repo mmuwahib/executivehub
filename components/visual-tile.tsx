@@ -13,12 +13,14 @@ export default function VisualTile({
   tone = "neutral",
   className = "h-40",
   image,
+  alt = "",
   children,
 }: {
   icon: string;
   tone?: Tone;
   className?: string;
   image?: string;
+  alt?: string;
   children?: ReactNode;
 }) {
   return (
@@ -26,8 +28,8 @@ export default function VisualTile({
       <div className={`absolute top-0 left-0 right-0 h-1 z-10 ${TONE_BG[tone]}`} />
       {image ? (
         <>
-          <Image src={image} alt="" fill sizes="(max-width: 1024px) 100vw, 500px" className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-surface/70 via-surface/0 to-black/10" />
+          <Image src={image} alt={alt} fill sizes="(max-width: 1024px) 100vw, 500px" className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface/70 via-surface/0 to-ink/10" />
         </>
       ) : (
         <>

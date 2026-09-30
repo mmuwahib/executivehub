@@ -26,6 +26,7 @@ yarn-error.log*
 # azure functions
 api/dist/
 api/local.settings.json
+api/.azurite/
 
 # typescript
 *.tsbuildinfo

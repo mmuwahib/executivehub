@@ -108,6 +108,14 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Keyboard-only focus ring — mouse/touch interaction never triggers it, so
+   it doesn't add a visual outline to every click, only to Tab navigation. */
+:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 @layer components {
   .glass-card {
     @apply border border-border backdrop-blur-lg;

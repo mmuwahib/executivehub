@@ -46,6 +46,8 @@ import {
   Handshake,
   Building2,
   ExternalLink,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -100,6 +102,8 @@ export const ICONS: Record<string, LucideIcon> = {
   handshake: Handshake,
   business: Building2,
   external_link: ExternalLink,
+  menu: Menu,
+  close: X,
 };
 
 export function Icon({

@@ -9,11 +9,24 @@ export default function SearchBox() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(searchParams.get("q") ?? "");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setValue(searchParams.get("q") ?? "");
+    setMobileOpen(false);
   }, [pathname, searchParams]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    mobileInputRef.current?.focus();
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [mobileOpen]);
 
   function handleChange(next: string) {
     setValue(next);
@@ -31,19 +44,56 @@ export default function SearchBox() {
   }
 
   return (
-    <div className="relative hidden md:block">
-      <Icon
-        name="search"
-        size={18}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
-      />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="Search Intelligence..."
-        className="bg-panel-high/50 border-none rounded pl-10 pr-4 py-2 w-64 text-ink text-sm focus:ring-1 focus:ring-accent/50 placeholder:text-ink-faint"
-      />
-    </div>
+    <>
+      <div className="relative hidden md:block">
+        <Icon
+          name="search"
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Search Intelligence..."
+          className="bg-panel-high/50 border-none rounded pl-10 pr-4 py-2 w-64 text-ink text-sm focus:ring-1 focus:ring-accent/50 placeholder:text-ink-faint"
+        />
+      </div>
+
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden text-ink-muted hover:text-accent transition-colors"
+        aria-label="Search"
+      >
+        <Icon name="search" size={20} />
+      </button>
+
+      {mobileOpen && (
+        <div className="fixed inset-x-0 top-16 z-40 md:hidden bg-surface border-b border-border p-3">
+          <div className="relative">
+            <Icon
+              name="search"
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
+            />
+            <input
+              ref={mobileInputRef}
+              type="text"
+              value={value}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder="Search Intelligence..."
+              className="bg-panel-high/50 border-none rounded pl-10 pr-10 py-2 w-full text-ink text-sm focus:ring-1 focus:ring-accent/50 placeholder:text-ink-faint"
+            />
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint hover:text-accent"
+              aria-label="Close search"
+            >
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

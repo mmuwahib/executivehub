@@ -140,6 +140,7 @@ export default async function TechInnovationPage({
                     icon={article.icon ?? "bolt"}
                     tone={article.tone}
                     image={article.image}
+                    alt={article.title}
                     className="w-48 hidden lg:block rounded border border-border"
                   />
                 </div>

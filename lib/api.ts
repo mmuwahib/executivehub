@@ -23,6 +23,12 @@ interface DispatchBundle {
   projectTracker: ProjectTrackerData | null;
   techArticles: TechArticle[] | null;
   ticker: TickerItem[];
+  generated_at?: string;
+}
+
+export interface DataFreshness {
+  live: boolean;
+  generatedAt: string | null;
 }
 
 async function getBaseUrl(): Promise<string> {
@@ -87,4 +93,15 @@ export async function getTechArticles(): Promise<TechArticle[]> {
 export async function getMarketTicker(): Promise<TickerItem[]> {
   const bundle = await fetchDispatch();
   return bundle?.ticker?.length ? bundle.ticker : HEADER_TICKER;
+}
+
+// Whether the current page is showing real, Claude-researched dispatch data
+// or the static lib/mock-data.ts fallback — surfaced in the topbar so a
+// viewer isn't silently shown mock content with no indication either way.
+export async function getDataFreshness(): Promise<DataFreshness> {
+  const bundle = await fetchDispatch();
+  return {
+    live: bundle !== null,
+    generatedAt: bundle?.generated_at ?? null,
+  };
 }
