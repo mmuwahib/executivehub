@@ -22,7 +22,13 @@ jobs:
           cache: "npm"
 
       - run: npm ci
+      # Geopolitical is hidden unless the repo variable
+      # NEXT_PUBLIC_SHOW_GEOPOLITICAL is set to "true" (Settings > Secrets and
+      # variables > Actions > Variables). It is inlined at build time, so
+      # changing it needs a redeploy.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SHOW_GEOPOLITICAL: ${{ vars.NEXT_PUBLIC_SHOW_GEOPOLITICAL }}
 
       # next start needs node_modules at runtime (no standalone output
       # configured), so prune dev deps after build rather than before.

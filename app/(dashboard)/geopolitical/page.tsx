@@ -7,6 +7,7 @@ import ZuluClock from "@/components/zulu-clock";
 import SourceBadge from "@/components/source-badge";
 import RiskMap from "@/components/risk-map";
 import { IntelArticle } from "@/lib/types";
+import { safeUrl } from "@/lib/safe-url";
 
 const TAGS: IntelArticle["tag"][] = ["WARNING", "MONITOR"];
 
@@ -37,8 +38,9 @@ export default async function GeopoliticalPage({
         <div>
           <h1 className="text-display-lg text-ink tracking-tight">Geopolitical Intelligence</h1>
           <p className="text-ink-muted mt-1">
-            Sources restricted to <span className="text-accent font-semibold">Khaleej Times</span> &{" "}
-            <span className="text-accent font-semibold">Al Jazeera</span> only.
+            Sources: <span className="text-accent font-semibold">Khaleej Times</span>,{" "}
+            <span className="text-accent font-semibold">Al Jazeera</span> and{" "}
+            <span className="text-accent font-semibold">Arab News</span>, matched to each story&apos;s country.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -93,7 +95,7 @@ export default async function GeopoliticalPage({
             <div className="flex items-center justify-between mt-4">
               <span className="font-mono text-ticker-data text-danger">{criticalIncident.time}</span>
               <a
-                href={criticalIncident.sourceUrl}
+                href={safeUrl(criticalIncident.sourceUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent font-mono text-label-caps underline underline-offset-4 decoration-accent/30"
@@ -140,7 +142,7 @@ export default async function GeopoliticalPage({
         {filteredArticles.map((article, i) => (
           <a
             key={i}
-            href={article.sourceUrl}
+            href={safeUrl(article.sourceUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="glass-card group hover:bg-ink/5 transition-all rounded overflow-hidden flex items-stretch"

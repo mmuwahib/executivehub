@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SHOW_GEOPOLITICAL } from "@/lib/features";
 
 const AUTH_COOKIE = "atc-auth";
 
@@ -8,6 +9,10 @@ export function middleware(request: NextRequest) {
   if (!authCookie) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (!SHOW_GEOPOLITICAL && request.nextUrl.pathname.startsWith("/geopolitical")) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

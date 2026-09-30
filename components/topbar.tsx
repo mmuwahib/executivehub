@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { STATUS_CHIPS, FOOTER_TICKER } from "@/lib/nav";
+import { STATUS_CHIPS } from "@/lib/nav";
+import { getIntelFeed } from "@/lib/api";
 import { TONE_TEXT, TONE_BG } from "@/lib/tone";
 import ThemeToggle from "@/components/theme-toggle";
 import SearchBox from "@/components/search-box";
@@ -9,7 +10,8 @@ import NotificationsMenu from "@/components/notifications-menu";
 import FreshnessBadge from "@/components/freshness-badge";
 import MobileNav from "@/components/mobile-nav";
 
-export default function Topbar() {
+export default async function Topbar() {
+  const intel = await getIntelFeed();
   return (
     <header className="fixed top-0 left-0 lg:left-sidebar right-0 h-16 flex items-center justify-between px-6 z-30 bg-surface border-b border-border">
       <div className="flex items-center gap-4 lg:gap-8">
@@ -45,7 +47,7 @@ export default function Topbar() {
           ))}
         </div>
         <ThemeToggle />
-        <NotificationsMenu items={FOOTER_TICKER} />
+        <NotificationsMenu items={intel.items} live={intel.live} />
         <SettingsMenu />
         <div className="h-8 w-px bg-border mx-1" />
         <div className="flex items-center gap-3 text-right">

@@ -6,6 +6,8 @@ import LeadershipCard from "@/components/leadership-card";
 import VisualTile from "@/components/visual-tile";
 import SourceBadge from "@/components/source-badge";
 import CountryBadge from "@/components/country-badge";
+import { SHOW_GEOPOLITICAL } from "@/lib/features";
+import { safeUrl } from "@/lib/safe-url";
 
 export default async function MainDashboardPage({
   searchParams,
@@ -13,7 +15,8 @@ export default async function MainDashboardPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const { kpis, geoPulse, industryWeekly, leadershipMoves, marketSeries, projectHighlights, opportunityRadar } = await getDashboardData();
+  const { kpis: allKpis, geoPulse, industryWeekly, leadershipMoves, marketSeries, projectHighlights, opportunityRadar } = await getDashboardData();
+  const kpis = SHOW_GEOPOLITICAL ? allKpis : allKpis.filter((kpi) => kpi.label !== "Geopolitical Risk");
 
   const needle = q?.toLowerCase();
   const filteredGeoPulse = needle
@@ -28,7 +31,11 @@ export default async function MainDashboardPage({
   return (
     <div className="max-w-[1600px] mx-auto">
       {/* KPI Row */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <section
+        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 ${
+          kpis.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
+        }`}
+      >
         {kpis.map((kpi) => (
           <div key={kpi.label} className={`glass-card p-card rounded border-t-2 ${TONE_BORDER_TOP[kpi.tone]}`}>
             <div className="flex justify-between items-start mb-2">
@@ -49,6 +56,7 @@ export default async function MainDashboardPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-7 flex flex-col gap-6">
+          {SHOW_GEOPOLITICAL && (
           <section className="glass-card rounded flex flex-col">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-panel-high/20">
               <div className="flex items-center gap-2">
@@ -71,7 +79,7 @@ export default async function MainDashboardPage({
               {filteredGeoPulse.map((item, i) => (
                 <a
                   key={i}
-                  href={item.sourceUrl}
+                  href={safeUrl(item.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-5 flex gap-4 hover:bg-ink/5 transition-colors group"
@@ -98,6 +106,7 @@ export default async function MainDashboardPage({
               ))}
             </div>
           </section>
+          )}
 
           <section className="glass-card rounded flex flex-col">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-panel-high/20">
@@ -118,7 +127,7 @@ export default async function MainDashboardPage({
               {filteredIndustryWeekly.map((item, i) => (
                 <a
                   key={i}
-                  href={item.sourceUrl}
+                  href={safeUrl(item.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col gap-3 group"

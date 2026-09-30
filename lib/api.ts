@@ -6,11 +6,13 @@ import {
   projectTrackerData as mockProjectTracker,
   techArticles as mockTechArticles,
 } from "./mock-data";
-import { HEADER_TICKER } from "./nav";
+import { HEADER_TICKER, FOOTER_TICKER } from "./nav";
+import { SHOW_GEOPOLITICAL } from "./features";
 import {
   DashboardData,
   GeopoliticalData,
   IndustrySummaryData,
+  LiveIntelItem,
   ProjectTrackerData,
   TechArticle,
   TickerItem,
@@ -93,6 +95,21 @@ export async function getTechArticles(): Promise<TechArticle[]> {
 export async function getMarketTicker(): Promise<TickerItem[]> {
   const bundle = await fetchDispatch();
   return bundle?.ticker?.length ? bundle.ticker : HEADER_TICKER;
+}
+
+// Footer ticker + notifications. With live data they are built from the
+// published dispatch items, so every line links back to a validated source
+// story; otherwise the static sample lines are used and flagged as samples.
+export async function getIntelFeed(): Promise<{ live: boolean; items: LiveIntelItem[] }> {
+  const dashboard = (await fetchDispatch())?.dashboard;
+  if (!dashboard) return { live: false, items: FOOTER_TICKER };
+
+  const items: LiveIntelItem[] = [
+    ...(SHOW_GEOPOLITICAL ? dashboard.geoPulse.map((i) => ({ time: i.time, title: i.title })) : []),
+    ...dashboard.industryWeekly.map((i) => ({ time: i.tag, title: i.title })),
+    ...dashboard.leadershipMoves.map((i) => ({ time: "LEADERSHIP", title: `${i.company}: ${i.role}` })),
+  ];
+  return items.length ? { live: true, items } : { live: false, items: FOOTER_TICKER };
 }
 
 // Whether the current page is showing real, Claude-researched dispatch data

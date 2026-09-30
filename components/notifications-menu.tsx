@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/lib/icons";
 import { LiveIntelItem } from "@/lib/types";
 
-export default function NotificationsMenu({ items }: { items: LiveIntelItem[] }) {
+export default function NotificationsMenu({ items, live }: { items: LiveIntelItem[]; live: boolean }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +37,7 @@ export default function NotificationsMenu({ items }: { items: LiveIntelItem[] })
       {open && (
         <div className="absolute right-0 top-10 w-80 glass-card rounded shadow-lg z-50 py-2 max-h-96 overflow-y-auto custom-scrollbar">
           <div className="px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink-faint border-b border-border">
-            Live Intel Feed
+            {live ? "Live Intel Feed" : "Sample Feed"}
           </div>
           {items.map((item, i) => (
             <div key={i} className="px-4 py-3 border-b border-border last:border-0">

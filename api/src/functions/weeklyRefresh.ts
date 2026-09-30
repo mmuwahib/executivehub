@@ -1,7 +1,9 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
-import Anthropic from "@anthropic-ai/sdk";
 import { writeJsonBlob } from "../blobStorage";
+import { researchJson } from "../claude";
 import { WeeklyData } from "../types";
+import { allowedDomainsForPrompt } from "../outlets";
+import { validateWeekly } from "../validation";
 
 const WEEKLY_INTELLIGENCE_PROMPT = `You are an intelligence analyst for GulfCryo, an industrial gas company operating across 10 countries in the Middle East (UAE, Saudi Arabia, Kuwait, Bahrain, Qatar, Oman, Jordan, Iraq, Turkey, Egypt).
 
@@ -18,12 +20,14 @@ Use the web_search tool to research this week's industrial gas industry competit
     "projects": [ { "title": "...", "location": "...", "status": "...", "statusTone": "accent|warning|cyan|danger", "gasDemand": "...", "innovation": "...", "quote": "...", "atcConnection": true|false, "icon": "material-symbol-name", "category": "construction|renewable|sustainability" } ],
     "territories": [ { "country": "...", "projects": 0, "innovationPct": 0-100, "sector": "...", "opportunity": "HIGH|MEDIUM|EMERGING", "trend": "up|down|flat" } ]
   },
-  "techArticles": [ { "tag": "...", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://real-outlet-homepage...", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
+  "techArticles": [ { "tag": "...", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
 }
 
 Aim for genuine regional spread across techArticles (not everything MENA) — include real hydrogen/CCUS/industrial-gas developments from Europe, ASEAN, and the Americas where relevant, not just the Gulf.
 
 IMPORTANT: "sourceUrl" must be the exact, real URL of the specific article you found via web_search — not the outlet's homepage, and not a fabricated URL. Do not use Reuters as a source.
+
+IMPORTANT: Only cite articles published on these domains: ${allowedDomainsForPrompt()}. Items linking anywhere else are discarded automatically, as are links that are dead or point to a homepage.
 
 Your FINAL message must contain ONLY the JSON object and nothing else — no preamble, no summary of your research process, no markdown code fences, no text before or after it.`;
 
@@ -47,35 +51,31 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
     return;
   }
 
-  const anthropic = new Anthropic({ apiKey });
-
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-5",
-    max_tokens: 4096,
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 15 }],
-    messages: [{ role: "user", content: WEEKLY_INTELLIGENCE_PROMPT }],
-  });
-
-  if (message.stop_reason !== "end_turn") {
-    context.warn(`weeklyRefresh: unexpected stop_reason "${message.stop_reason}" — response may be incomplete.`);
-  }
-
-  // With web search enabled, Claude may write research commentary in earlier
-  // text blocks before its final JSON-only answer — take the last one, not the first.
-  const textBlocks = message.content.filter((block) => block.type === "text");
-  const finalBlock = textBlocks[textBlocks.length - 1];
-  if (!finalBlock) {
-    context.error("No text content returned from Claude.");
-    return;
-  }
-
-  let data: WeeklyData;
+  let text: string;
   try {
-    data = JSON.parse(finalBlock.text) as WeeklyData;
+    text = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 15);
   } catch (err) {
-    context.error("Claude's final response was not valid JSON:", finalBlock.text.slice(0, 500), err);
+    context.error("weeklyRefresh: research call failed; keeping previous data.", err);
     return;
   }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    context.error("Claude's final response was not valid JSON:", text.slice(0, 500), err);
+    return;
+  }
+
+  const result = await validateWeekly(parsed);
+  for (const drop of result.drops) {
+    context.warn(`weeklyRefresh dropped ${drop.where}: ${drop.reason} (${drop.url})`);
+  }
+  if (!result.ok) {
+    context.error(`weeklyRefresh rejected the run, keeping previous data: ${result.reason}`);
+    return;
+  }
+  const data: WeeklyData = result.data;
 
   const week = getIsoWeek(new Date());
 

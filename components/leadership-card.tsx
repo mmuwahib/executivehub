@@ -2,13 +2,14 @@ import { LeadershipAppointment } from "@/lib/types";
 import { TONE_TEXT, TONE_BORDER, TONE_CHIP, REGION_TONE } from "@/lib/tone";
 import { companyTone } from "@/lib/company";
 import SourceBadge from "@/components/source-badge";
+import { safeUrl } from "@/lib/safe-url";
 
 export default function LeadershipCard({ appointment }: { appointment: LeadershipAppointment }) {
   const tone = companyTone(appointment.company);
 
   return (
     <a
-      href={appointment.sourceUrl}
+      href={safeUrl(appointment.sourceUrl)}
       target="_blank"
       rel="noopener noreferrer"
       className={`glass-card rounded p-5 flex gap-4 border-l-4 ${TONE_BORDER[tone]} hover:bg-ink/5 transition-colors group`}

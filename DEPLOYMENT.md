@@ -125,6 +125,37 @@ Push to `main`, or trigger each workflow manually from the **Actions** tab
 (**Run workflow**). Watch the run logs; `azure/webapps-deploy@v3` and
 `Azure/functions-action@v1` both print the live site URL on success.
 
+## Managing live sources
+
+Every daily/weekly refresh is checked before it is published
+(`api/src/validation.ts`). If a run fails any check, the previous
+`current-*.json` stays live — a bad night never blanks or corrupts the site.
+
+- **Which outlets can appear**: edit `ALLOWED_SOURCE_DOMAINS` in
+  `api/src/outlets.ts` (also injected into the Claude prompt). Add a domain to
+  allow an outlet; remove it to stop publishing links from it. Redeploy the
+  Function App.
+- **What gets dropped**: non-https links, hosts off the allow-list,
+  homepage-only links, duplicate links, and links that return 404/410 or a
+  dead DNS name. Each drop is logged as a warning
+  (`dailyRefresh dropped ... : reason (url)`) in Function App logs /
+  Application Insights. A run is rejected outright (logged as an error) if the
+  structure is broken or a section falls below its minimum item count.
+- **Known limit**: sites that block automated requests (403/timeouts, e.g.
+  gasworld.com) can't be link-checked, so those links are kept if they pass
+  the host/format checks. Spot-check them after the first live run.
+- **Rolling back**: every successful run also writes a dated copy
+  (`daily/YYYY-MM-DD.json`, `weekly/YYYY-Www.json`) in the `dispatch`
+  container. To roll back, copy a dated blob over `current-daily.json` /
+  `current-weekly.json` in the Azure Portal.
+- **Freshness**: the topbar badge shows Live, then Stale once the last good
+  daily refresh is over 36 hours old. `generated_at` is stamped by the
+  function, not taken from Claude.
+- **Geopolitical section**: hidden by default. To show it again, set the
+  GitHub repo variable `NEXT_PUBLIC_SHOW_GEOPOLITICAL` to `true`
+  (Settings → Secrets and variables → Actions → Variables) and redeploy the
+  web app; locally, set it in `.env.local` and restart `npm run dev`.
+
 ## Still open (not blocking this workflow, but unresolved)
 
 - **Real Anthropic API key** — `api/local.settings.json`'s key is a

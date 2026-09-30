@@ -6,6 +6,7 @@ import PrintButton from "@/components/print-button";
 import VisualTile from "@/components/visual-tile";
 import SourceBadge from "@/components/source-badge";
 import { TechArticle, Region } from "@/lib/types";
+import { safeUrl } from "@/lib/safe-url";
 
 const SIZE_SPAN: Record<TechArticle["size"], string> = {
   featured: "col-span-12 md:col-span-8",
@@ -184,7 +185,7 @@ function ArticleFooter({ article }: { article: TechArticle }) {
   return (
     <div className="mt-auto flex items-center gap-2 text-ink-muted text-[11px] font-mono">
       <a
-        href={article.sourceUrl}
+        href={safeUrl(article.sourceUrl)}
         target="_blank"
         rel="noopener noreferrer"
         className="hover:text-accent transition-colors"

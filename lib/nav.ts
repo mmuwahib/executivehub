@@ -1,4 +1,6 @@
-export const NAV_ITEMS = [
+import { SHOW_GEOPOLITICAL } from "./features";
+
+const ALL_NAV_ITEMS = [
   { href: "/", label: "Main Dashboard", icon: "dashboard" },
   { href: "/geopolitical", label: "Geopolitical", icon: "public" },
   { href: "/industry-summary", label: "Industry Summary", icon: "factory" },
@@ -6,6 +8,10 @@ export const NAV_ITEMS = [
   { href: "/tech-innovation", label: "Tech Innovation", icon: "precision_manufacturing" },
   { href: "/atc-program", label: "ATC Program", icon: "science" },
 ] as const;
+
+export const NAV_ITEMS = ALL_NAV_ITEMS.filter(
+  (item) => SHOW_GEOPOLITICAL || item.href !== "/geopolitical"
+);
 
 export const COUNTRIES = [
   "UAE",
@@ -20,11 +26,13 @@ export const COUNTRIES = [
   "Egypt",
 ] as const;
 
-export const STATUS_CHIPS = [
-  { label: "GEO HIGH", tone: "danger" as const },
-  { label: "INDUSTRY STABLE", tone: "accent" as const },
-  { label: "PROJECTS GROWTH", tone: "cyan" as const },
+const ALL_STATUS_CHIPS = [
+  { label: "GEO HIGH", tone: "danger" as const, geo: true },
+  { label: "INDUSTRY STABLE", tone: "accent" as const, geo: false },
+  { label: "PROJECTS GROWTH", tone: "cyan" as const, geo: false },
 ];
+
+export const STATUS_CHIPS = ALL_STATUS_CHIPS.filter((chip) => SHOW_GEOPOLITICAL || !chip.geo);
 
 export const HEADER_TICKER = [
   { label: "BRENT", value: "$84.12", change: "-0.8%", direction: "down" as const },
@@ -35,11 +43,15 @@ export const HEADER_TICKER = [
   { label: "ATC NETWORK", value: "OPERATIONAL", direction: "flat" as const },
 ];
 
-export const FOOTER_TICKER = [
-  { time: "08:20:06 Z", title: "Strait of Hormuz: Escalated Naval Presence" },
-  { time: "08:14:22 Z", title: "UAE Hosts Emergency Energy Summit" },
-  { time: "07:58:11 Z", title: "Red Sea: Houthi Maritime Disruptions Persist" },
-  { time: "07:45:00 Z", title: "Saudi Arabia Calls for Unified Response" },
-  { time: "07:30:41 Z", title: "Technology Cuts Industrial Gas Losses by 28%" },
-  { time: "07:12:05 Z", title: "Helium Storage Facilities at Max Capacity in KSA" },
+const ALL_FOOTER_TICKER = [
+  { time: "08:20:06 Z", title: "Strait of Hormuz: Escalated Naval Presence", geo: true },
+  { time: "08:14:22 Z", title: "UAE Hosts Emergency Energy Summit", geo: true },
+  { time: "07:58:11 Z", title: "Red Sea: Houthi Maritime Disruptions Persist", geo: true },
+  { time: "07:45:00 Z", title: "Saudi Arabia Calls for Unified Response", geo: true },
+  { time: "07:30:41 Z", title: "Technology Cuts Industrial Gas Losses by 28%", geo: false },
+  { time: "07:12:05 Z", title: "Helium Storage Facilities at Max Capacity in KSA", geo: false },
 ];
+
+export const FOOTER_TICKER = ALL_FOOTER_TICKER.filter((item) => SHOW_GEOPOLITICAL || !item.geo).map(
+  ({ time, title }) => ({ time, title })
+);
