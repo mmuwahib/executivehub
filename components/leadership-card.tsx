@@ -1,7 +1,6 @@
 import { LeadershipAppointment } from "@/lib/types";
-import { TONE_TEXT, TONE_BORDER, TONE_CHIP, REGION_TONE } from "@/lib/tone";
+import { TONE_CHIP } from "@/lib/tone";
 import { companyTone } from "@/lib/company";
-import SourceBadge from "@/components/source-badge";
 import { safeUrl } from "@/lib/safe-url";
 
 export default function LeadershipCard({ appointment }: { appointment: LeadershipAppointment }) {
@@ -12,27 +11,22 @@ export default function LeadershipCard({ appointment }: { appointment: Leadershi
       href={safeUrl(appointment.sourceUrl)}
       target="_blank"
       rel="noopener noreferrer"
-      className={`glass-card rounded p-5 flex gap-4 border-l-4 ${TONE_BORDER[tone]} hover:bg-ink/5 transition-colors group`}
+      className="rounded-lg bg-panel-high p-4 flex gap-4 hover:bg-panel-highest transition-colors group"
     >
-      <div
-        className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${TONE_CHIP[tone]}`}
+      <span
+        className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm ${TONE_CHIP[tone]}`}
       >
         {appointment.initials}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-sm font-bold text-ink group-hover:text-accent transition-colors">
-            {appointment.role}
-          </p>
-          <span className={`px-2 py-0.5 font-mono text-[10px] rounded uppercase ${TONE_CHIP[REGION_TONE[appointment.region]]}`}>
-            {appointment.region}
-          </span>
-        </div>
-        <p className={`font-mono text-[11px] uppercase tracking-wide mt-0.5 ${TONE_TEXT[tone]}`}>
-          {appointment.company}
+      </span>
+      <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <p className="text-[15px] font-semibold leading-snug text-ink group-hover:text-accent transition-colors">
+          {appointment.role}
         </p>
-        <p className="text-ink-muted text-[13px] mt-2 leading-relaxed">{appointment.desc}</p>
-        <SourceBadge source={appointment.source} className="font-mono text-[10px] text-ink-faint mt-2" />
+        <p className="eyebrow text-accent">
+          {appointment.company} · {appointment.region}
+        </p>
+        <p className="text-[13px] text-ink-muted leading-relaxed">{appointment.desc}</p>
+        <p className="text-[12px] text-ink-faint">{appointment.source}</p>
       </div>
     </a>
   );

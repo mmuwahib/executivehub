@@ -1,5 +1,4 @@
-import Sidebar from "@/components/sidebar";
-import Topbar from "@/components/topbar";
+import AppHeader from "@/components/app-header";
 import MarketTicker from "@/components/market-ticker";
 import FooterTicker from "@/components/footer-ticker";
 import { getMarketTicker, getIntelFeed } from "@/lib/api";
@@ -9,17 +8,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const tickerItems = await getMarketTicker();
+  const ticker = await getMarketTicker();
   const intel = await getIntelFeed();
 
   return (
     <>
-      <Sidebar />
-      <Topbar />
-      <div className="lg:ml-sidebar pt-16 pb-10 min-h-screen">
-        <MarketTicker items={tickerItems} />
-        <main className="p-6 md:p-8">{children}</main>
-      </div>
+      <AppHeader />
+      <MarketTicker items={ticker.items} live={ticker.live} />
+      <main className="max-w-[1360px] mx-auto px-4 md:px-10 pt-8 pb-20 min-h-screen">{children}</main>
       <FooterTicker items={intel.items} live={intel.live} />
     </>
   );

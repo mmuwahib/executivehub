@@ -1,11 +1,11 @@
 import { SHOW_GEOPOLITICAL } from "./features";
 
 const ALL_NAV_ITEMS = [
-  { href: "/", label: "Main Dashboard", icon: "dashboard" },
+  { href: "/", label: "Overview", icon: "dashboard" },
   { href: "/geopolitical", label: "Geopolitical", icon: "public" },
-  { href: "/industry-summary", label: "Industry Summary", icon: "factory" },
-  { href: "/project-tracker", label: "Project Tracker", icon: "analytics" },
-  { href: "/tech-innovation", label: "Tech Innovation", icon: "precision_manufacturing" },
+  { href: "/industry-summary", label: "Industry", icon: "factory" },
+  { href: "/project-tracker", label: "Projects", icon: "analytics" },
+  { href: "/tech-innovation", label: "Tech & Innovation", icon: "precision_manufacturing" },
   { href: "/atc-program", label: "ATC Program", icon: "science" },
 ] as const;
 
@@ -25,14 +25,6 @@ export const COUNTRIES = [
   "Turkey",
   "Egypt",
 ] as const;
-
-const ALL_STATUS_CHIPS = [
-  { label: "GEO HIGH", tone: "danger" as const, geo: true },
-  { label: "INDUSTRY STABLE", tone: "accent" as const, geo: false },
-  { label: "PROJECTS GROWTH", tone: "cyan" as const, geo: false },
-];
-
-export const STATUS_CHIPS = ALL_STATUS_CHIPS.filter((chip) => SHOW_GEOPOLITICAL || !chip.geo);
 
 export const HEADER_TICKER = [
   { label: "BRENT", value: "$84.12", change: "-0.8%", direction: "down" as const },

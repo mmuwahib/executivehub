@@ -1,19 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/lib/icons";
-import { STATUS_CHIPS } from "@/lib/nav";
-import { TONE_TEXT, TONE_BG } from "@/lib/tone";
 import Logo from "@/components/logo";
 import NavList from "@/components/nav-list";
 
-// Off-canvas drawer for the sidebar's nav below the `lg` breakpoint, where
-// Sidebar is `hidden`. Reuses NavList so desktop and mobile can't drift on
-// which pages/countries link where. `freshnessSlot` is passed in from the
-// (server) Topbar since FreshnessBadge is an async Server Component this
-// client component can't import directly.
+// Off-canvas drawer for the section nav below the `lg` breakpoint, where the
+// header's NavTabs are hidden. `freshnessSlot` is passed in from the (server)
+// AppHeader since FreshnessBadge is an async Server Component this client
+// component can't import directly.
 export default function MobileNav({ freshnessSlot }: { freshnessSlot?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -86,25 +82,7 @@ export default function MobileNav({ freshnessSlot }: { freshnessSlot?: ReactNode
               <NavList />
             </nav>
 
-            <div className="p-4 border-t border-border space-y-3">
-              <Link
-                href="/#market-data"
-                className="block font-mono text-ticker-data text-accent hover:underline"
-              >
-                Markets
-              </Link>
-              <div className="flex flex-wrap items-center gap-3">
-                {STATUS_CHIPS.map((chip) => (
-                  <span
-                    key={chip.label}
-                    className={`flex items-center gap-1 text-[10px] font-bold uppercase ${TONE_TEXT[chip.tone]}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${TONE_BG[chip.tone]}`} /> {chip.label}
-                  </span>
-                ))}
-              </div>
-              {freshnessSlot}
-            </div>
+            <div className="p-4 border-t border-border">{freshnessSlot}</div>
           </div>
         </div>
       )}

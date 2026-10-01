@@ -232,7 +232,15 @@ export async function validateDaily(raw: unknown, opts: ValidationOptions = {}):
   return { ok: true, data, drops };
 }
 
-export async function validateWeekly(raw: unknown, opts: ValidationOptions = {}): Promise<Validated<WeeklyData>> {
+// `previousTechArticles` is the last published set. Tech news is the section
+// most likely to come back stale; when too few recent articles survive, the
+// previous set is kept so the (independent) industry and project analysis
+// still publishes instead of the whole run being thrown away.
+export async function validateWeekly(
+  raw: unknown,
+  opts: ValidationOptions = {},
+  previousTechArticles: WeeklyData["techArticles"] | null = null
+): Promise<Validated<WeeklyData>> {
   const drops: Drop[] = [];
   const fail = (reason: string): Validated<WeeklyData> => ({ ok: false, reason, drops });
 
@@ -252,10 +260,19 @@ export async function validateWeekly(raw: unknown, opts: ValidationOptions = {})
     raw.techArticles, "techArticles", drops, opts, ["title", "desc", "source"], MAX_AGE_DAYS.weekly
   );
   if (!techArticles) return fail("techArticles is not an array");
+
+  let publishedTech = techArticles;
   if (techArticles.length < MIN_ITEMS.techArticles) {
-    return fail(`only ${techArticles.length} valid techArticles (need ${MIN_ITEMS.techArticles})`);
+    publishedTech = previousTechArticles ?? [];
+    drops.push({
+      where: "techArticles",
+      url: "",
+      reason: `only ${techArticles.length} recent articles passed (need ${MIN_ITEMS.techArticles}); ${
+        previousTechArticles ? "kept the previously published set" : "published none this week"
+      }`,
+    });
   }
 
-  const data = { ...raw, techArticles } as unknown as WeeklyData;
+  const data = { ...raw, techArticles: publishedTech } as unknown as WeeklyData;
   return { ok: true, data, drops };
 }

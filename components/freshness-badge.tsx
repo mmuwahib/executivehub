@@ -1,5 +1,4 @@
 import { getDataFreshness } from "@/lib/api";
-import { TONE_CHIP } from "@/lib/tone";
 
 const STALE_AFTER_MS = 36 * 60 * 60 * 1000;
 
@@ -14,7 +13,11 @@ function formatRelativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
-export default async function FreshnessBadge() {
+const PILL = "items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap";
+
+// `display` controls visibility: the header shows it from lg up, the mobile
+// drawer always.
+export default async function FreshnessBadge({ display = "hidden lg:inline-flex" }: { display?: string }) {
   const { live, generatedAt } = await getDataFreshness();
 
   if (live && generatedAt) {
@@ -30,7 +33,7 @@ export default async function FreshnessBadge() {
       return (
         <span
           title={`Last successful refresh ${generatedLabel} UTC — newer refreshes have failed or been rejected`}
-          className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${TONE_CHIP.warning}`}
+          className={`${display} ${PILL} bg-warning/15 text-warning`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-warning" />
           Stale &middot; {formatRelativeTime(generatedAt)}
@@ -38,11 +41,8 @@ export default async function FreshnessBadge() {
       );
     }
     return (
-      <span
-        title={`Live data refreshed ${generatedLabel} UTC`}
-        className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${TONE_CHIP.accent}`}
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-glow" />
+      <span title={`Live data refreshed ${generatedLabel} UTC`} className={`${display} ${PILL} bg-positive/15 text-positive`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-positive" />
         Live &middot; {formatRelativeTime(generatedAt)}
       </span>
     );
@@ -51,7 +51,7 @@ export default async function FreshnessBadge() {
   return (
     <span
       title="No successful data refresh yet — showing preview content"
-      className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${TONE_CHIP.warning}`}
+      className={`${display} ${PILL} bg-warning/15 text-warning`}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-warning" />
       Preview data

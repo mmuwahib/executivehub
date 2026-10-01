@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Self-hosted at build time by next/font (no runtime request to Google) —
-// gives numeric/data displays a genuine monospace face instead of the
-// Segoe UI fallback, which isn't actually monospaced.
+// Both self-hosted at build time by next/font (no runtime request to Google).
+// Archivo is the console's UI face; JetBrains Mono carries numbers and labels.
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -44,7 +50,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className={`font-sans bg-canvas text-ink antialiased ${jetbrainsMono.variable}`}>
+      <body className={`font-sans bg-canvas text-ink antialiased ${archivo.variable} ${jetbrainsMono.variable}`}>
         {children}
       </body>
     </html>

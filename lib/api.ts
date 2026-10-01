@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import {
   dashboardData as mockDashboard,
@@ -49,7 +50,9 @@ async function getBaseUrl(): Promise<string> {
 // automatically). Returns null on any failure — callers fall back to mock
 // data so the app never breaks when the Functions host isn't reachable
 // (e.g. local `next dev` without the SWA CLI proxy, or no live data yet).
-async function fetchDispatch(): Promise<DispatchBundle | null> {
+// Wrapped in React cache() so the layout, header and page share one request
+// per render instead of each fetching the same bundle.
+const fetchDispatch = cache(async (): Promise<DispatchBundle | null> => {
   try {
     const base = await getBaseUrl();
     const cookieStore = await cookies();
@@ -65,11 +68,17 @@ async function fetchDispatch(): Promise<DispatchBundle | null> {
   } catch {
     return null;
   }
-}
+});
 
 export async function getDashboardData(): Promise<DashboardData> {
   const bundle = await fetchDispatch();
-  return bundle?.dashboard ?? mockDashboard;
+  if (!bundle?.dashboard) return mockDashboard;
+  // Market series come from the separate market refresh, which has no
+  // provider yet, so a live bundle carries an empty list: keep the samples.
+  const marketSeries = bundle.dashboard.marketSeries?.length
+    ? bundle.dashboard.marketSeries
+    : mockDashboard.marketSeries;
+  return { ...bundle.dashboard, marketSeries };
 }
 
 export async function getGeopoliticalData(): Promise<GeopoliticalData> {
@@ -92,9 +101,11 @@ export async function getTechArticles(): Promise<TechArticle[]> {
   return bundle?.techArticles ?? mockTechArticles;
 }
 
-export async function getMarketTicker(): Promise<TickerItem[]> {
+// `live` is true only when the market refresh has actually published prices;
+// otherwise the strip shows sample values and says so.
+export async function getMarketTicker(): Promise<{ live: boolean; items: TickerItem[] }> {
   const bundle = await fetchDispatch();
-  return bundle?.ticker?.length ? bundle.ticker : HEADER_TICKER;
+  return bundle?.ticker?.length ? { live: true, items: bundle.ticker } : { live: false, items: HEADER_TICKER };
 }
 
 // Footer ticker + notifications. With live data they are built from the
@@ -113,7 +124,7 @@ export async function getIntelFeed(): Promise<{ live: boolean; items: LiveIntelI
 }
 
 // Whether the current page is showing real, Claude-researched dispatch data
-// or the static lib/mock-data.ts fallback — surfaced in the topbar so a
+// or the static lib/mock-data.ts fallback — surfaced in the header so a
 // viewer isn't silently shown mock content with no indication either way.
 export async function getDataFreshness(): Promise<DataFreshness> {
   const bundle = await fetchDispatch();

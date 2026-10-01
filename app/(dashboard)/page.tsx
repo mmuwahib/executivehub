@@ -1,271 +1,251 @@
 import Link from "next/link";
-import { Icon } from "@/lib/icons";
-import { TONE_TEXT, TONE_BG, TONE_CHIP, REGION_TONE, TONE_BORDER_TOP } from "@/lib/tone";
-import { getDashboardData } from "@/lib/api";
-import LeadershipCard from "@/components/leadership-card";
-import VisualTile from "@/components/visual-tile";
-import SourceBadge from "@/components/source-badge";
-import CountryBadge from "@/components/country-badge";
+import { TONE_BG, TONE_CHIP } from "@/lib/tone";
+import { getDashboardData, getIndustrySummaryData, getProjectTrackerData, getMarketTicker } from "@/lib/api";
 import { SHOW_GEOPOLITICAL } from "@/lib/features";
 import { safeUrl } from "@/lib/safe-url";
+import { countryIso } from "@/lib/flags";
+import LeadershipCard from "@/components/leadership-card";
+import CountryBadge from "@/components/country-badge";
+import CompetitorHeatmap from "@/components/competitor-heatmap";
+import KpiBand from "@/components/kpi-band";
+import Panel from "@/components/panel";
 
-export default async function MainDashboardPage({
+const OPPORTUNITY_BAR: Record<string, string> = {
+  HIGH: "bg-accent",
+  MEDIUM: "bg-accent/60",
+  EMERGING: "bg-accent/30",
+};
+
+export default async function OverviewPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const { kpis: allKpis, geoPulse, industryWeekly, leadershipMoves, marketSeries, projectHighlights, opportunityRadar } = await getDashboardData();
-  const kpis = SHOW_GEOPOLITICAL ? allKpis : allKpis.filter((kpi) => kpi.label !== "Geopolitical Risk");
+  const [dashboard, industry, tracker, ticker] = await Promise.all([
+    getDashboardData(),
+    getIndustrySummaryData(),
+    getProjectTrackerData(),
+    getMarketTicker(),
+  ]);
+  const { geoPulse, industryWeekly, leadershipMoves, marketSeries, projectHighlights, opportunityRadar } = dashboard;
+  const kpis = SHOW_GEOPOLITICAL ? dashboard.kpis : dashboard.kpis.filter((kpi) => kpi.label !== "Geopolitical Risk");
 
   const needle = q?.toLowerCase();
-  const filteredGeoPulse = needle
-    ? geoPulse.filter((item) => item.title.toLowerCase().includes(needle))
-    : geoPulse;
-  const filteredIndustryWeekly = needle
-    ? industryWeekly.filter(
-        (item) => item.title.toLowerCase().includes(needle) || item.desc.toLowerCase().includes(needle)
-      )
+  const filteredGeoPulse = needle ? geoPulse.filter((i) => i.title.toLowerCase().includes(needle)) : geoPulse;
+  const filteredWeekly = needle
+    ? industryWeekly.filter((i) => i.title.toLowerCase().includes(needle) || i.desc.toLowerCase().includes(needle))
     : industryWeekly;
 
+  // Ticker lines that aren't already shown as a full market series row.
+  const seriesKeys = marketSeries.map((s) => s.label.split(" ")[0].toUpperCase());
+  const extraTicker = ticker.items
+    .filter((t) => t.change !== undefined || /USD|AED|SAR/.test(t.label))
+    .filter((t) => !seriesKeys.includes(t.label.split(" ")[0].toUpperCase()))
+    .slice(0, 2);
+
+  const maxProjects = Math.max(1, ...tracker.territories.map((t) => t.projects));
+
   return (
-    <div className="max-w-[1600px] mx-auto">
-      {/* KPI Row */}
-      <section
-        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 ${
-          kpis.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
-        }`}
-      >
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className={`glass-card p-card rounded border-t-2 ${TONE_BORDER_TOP[kpi.tone]}`}>
-            <div className="flex justify-between items-start mb-2">
-              <span className="font-mono text-[11px] text-ink-faint uppercase tracking-wider">
-                {kpi.label}
-              </span>
-              <Icon name={kpi.icon} size={20} className={TONE_TEXT[kpi.tone]} />
-            </div>
-            <div className="text-[32px] font-bold text-ink leading-tight mb-1">{kpi.value}</div>
-            <div className="flex items-center gap-2 font-mono text-[11px]">
-              <span className={`w-1.5 h-1.5 rounded-full ${TONE_BG[kpi.tone]}`} />
-              <span className="text-ink-muted">{kpi.delta}</span>
-            </div>
+    <div className="flex flex-col gap-7">
+      <KpiBand items={kpis} />
+
+      {SHOW_GEOPOLITICAL && (
+        <Panel title="Geopolitical pulse" aside={<span className="eyebrow">{filteredGeoPulse.length} items</span>}>
+          <div className="flex flex-col divide-y divide-border">
+            {filteredGeoPulse.map((item, i) => (
+              <a key={i} href={safeUrl(item.sourceUrl)} target="_blank" rel="noopener noreferrer" className="py-3 flex gap-4 group">
+                <span className={`self-start px-2 py-0.5 rounded font-mono text-[10px] ${item.tag === "WARNING" ? TONE_CHIP.danger : TONE_CHIP.accent}`}>
+                  {item.tag}
+                </span>
+                <span className="flex-1 font-semibold text-ink group-hover:text-accent">{item.title}</span>
+                <span className="text-[12px] text-ink-faint whitespace-nowrap">{item.source}</span>
+              </a>
+            ))}
           </div>
-        ))}
-      </section>
+        </Panel>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          {SHOW_GEOPOLITICAL && (
-          <section className="glass-card rounded flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-panel-high/20">
-              <div className="flex items-center gap-2">
-                <Icon name="analytics" size={20} className="text-accent" />
-                <h2 className="text-headline-sm text-ink">Daily Geopolitical Pulse</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="px-2 py-0.5 bg-accent/10 border border-accent/20 rounded">
-                  <span className="font-mono text-[10px] text-accent">{filteredGeoPulse.length} LIVE</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <Panel
+          className="lg:col-span-8"
+          title="Competitive landscape"
+          aside={
+            <Link href="/industry-summary" className="text-[13px] font-semibold">
+              Industry →
+            </Link>
+          }
+        >
+          <p className="-mt-3 text-[13px] text-ink-muted">Competitor strength by country, and where Gulf Cryo has room to grow</p>
+          <CompetitorHeatmap rows={industry.competitors} />
+        </Panel>
+
+        <Panel
+          id="market-data"
+          className="lg:col-span-4 scroll-mt-24"
+          title="Market movers"
+          aside={<span className={`eyebrow ${ticker.live ? "text-positive" : "text-warning"}`}>{ticker.live ? "Live" : "Sample"}</span>}
+        >
+          <div className="flex flex-col divide-y divide-border -my-2">
+            {marketSeries.map((series) => {
+              const up = series.direction === "up";
+              const down = series.direction === "down";
+              return (
+                <div key={series.label} className="py-3 flex items-center justify-between gap-3">
+                  <div className="flex flex-col min-w-0">
+                    <span className="eyebrow truncate">{series.label}</span>
+                    <span className="text-xl font-bold text-ink">{series.value}</span>
+                  </div>
+                  <div className="h-8 flex items-end gap-1" aria-hidden="true">
+                    {series.bars.map((h, i) => (
+                      <span
+                        key={i}
+                        className={`w-1.5 rounded-sm ${up ? "bg-positive" : down ? "bg-danger" : "bg-ink-faint"}`}
+                        style={{ height: `${Math.max(8, h)}%`, opacity: i === series.bars.length - 1 ? 1 : 0.35 }}
+                      />
+                    ))}
+                  </div>
+                  <span
+                    className={`min-w-[60px] text-center px-2 py-1 rounded-md font-mono text-[12px] font-semibold ${
+                      up ? "bg-positive/15 text-positive" : down ? "bg-danger/15 text-danger" : "bg-panel-highest text-ink-muted"
+                    }`}
+                  >
+                    {series.change}
+                  </span>
                 </div>
-                <Link href="/geopolitical" className="font-mono text-[11px] text-accent hover:underline">
-                  FULL FEED →
-                </Link>
-              </div>
-            </div>
-            <div className="divide-y divide-border">
-              {filteredGeoPulse.length === 0 && (
-                <div className="p-8 text-center text-ink-muted text-sm">No results for &ldquo;{q}&rdquo;.</div>
-              )}
-              {filteredGeoPulse.map((item, i) => (
-                <a
-                  key={i}
-                  href={safeUrl(item.sourceUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-5 flex gap-4 hover:bg-ink/5 transition-colors group"
+              );
+            })}
+            {extraTicker.map((item) => (
+              <div key={item.label} className="py-3 flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="eyebrow">{item.label}</span>
+                  <span className="text-xl font-bold text-ink">{item.value}</span>
+                </div>
+                <span
+                  className={`min-w-[60px] text-center px-2 py-1 rounded-md font-mono text-[12px] font-semibold ${
+                    item.direction === "up"
+                      ? "bg-positive/15 text-positive"
+                      : item.direction === "down"
+                        ? "bg-danger/15 text-danger"
+                        : "bg-panel-highest text-ink-muted"
+                  }`}
                 >
-                  <div className="mt-1">
-                    <span
-                      className={`px-2 py-1 font-mono text-[10px] uppercase tracking-tighter rounded ${
-                        item.tag === "WARNING" ? TONE_CHIP.danger : TONE_CHIP.accent
-                      }`}
-                    >
-                      {item.tag}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-ink group-hover:text-accent transition-colors">
-                      {item.title}
-                    </h3>
-                    <div className="flex items-center gap-3 mt-2 font-mono text-[11px] text-ink-faint">
-                      <SourceBadge source={item.source} />
-                      <span className="flex items-center gap-1">{item.time}</span>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
+                  {item.change ?? "PEG"}
+                </span>
+              </div>
+            ))}
+          </div>
+          {!ticker.live && (
+            <p className="text-[12px] text-ink-faint">Sample values until a market data provider is connected.</p>
           )}
+        </Panel>
+      </div>
 
-          <section className="glass-card rounded flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-panel-high/20">
-              <div className="flex items-center gap-2">
-                <Icon name="factory" size={20} className="text-accent" />
-                <h2 className="text-headline-sm text-ink">Industrial Gas Weekly</h2>
-              </div>
-              <Link href="/industry-summary" className="font-mono text-[11px] text-ink-muted hover:text-ink">
-                ARCHIVE →
-              </Link>
-            </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredIndustryWeekly.length === 0 && (
-                <div className="md:col-span-2 text-center text-ink-muted text-sm py-4">
-                  No results for &ldquo;{q}&rdquo;.
-                </div>
-              )}
-              {filteredIndustryWeekly.map((item, i) => (
-                <a
-                  key={i}
-                  href={safeUrl(item.sourceUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col gap-3 group"
-                >
-                  <VisualTile icon="factory" tone={item.tone} image={item.image} alt={item.title} className="aspect-video rounded">
-                    <div
-                      className={`absolute top-2 left-2 px-2 py-1 font-mono text-[10px] font-bold ${TONE_BG[item.tone]} text-accent-on`}
-                    >
-                      {item.tag}
-                    </div>
-                    <div className={`absolute top-2 right-2 px-2 py-1 font-mono text-[10px] rounded uppercase ${TONE_CHIP[REGION_TONE[item.region]]}`}>
-                      {item.region}
-                    </div>
-                  </VisualTile>
-                  <div>
-                    <h4 className="text-[16px] font-semibold leading-tight mb-2 text-ink group-hover:text-accent transition-colors">
-                      {item.title}
-                    </h4>
-                    <p className="text-ink-muted text-[13px] line-clamp-2">{item.desc}</p>
-                    <SourceBadge source={item.source} className="font-mono text-[10px] text-ink-faint mt-1" />
-                  </div>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          <section className="glass-card rounded flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-panel-high/20">
-              <div className="flex items-center gap-2">
-                <Icon name="groups" size={20} className="text-accent" />
-                <h2 className="text-headline-sm text-ink">Executive Moves</h2>
-              </div>
-              <span className="font-mono text-[10px] text-ink-faint uppercase">Competitor Leadership</span>
-            </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <Panel className="lg:col-span-5" title="Executive moves" aside={<span className="eyebrow">Competitor leadership</span>}>
+          {leadershipMoves.length === 0 ? (
+            <p className="text-sm text-ink-muted">No new competitor appointments in the last 30 days.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
               {leadershipMoves.map((appointment, i) => (
                 <LeadershipCard key={i} appointment={appointment} />
               ))}
             </div>
-          </section>
-        </div>
+          )}
+        </Panel>
 
-        {/* Right Column */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <section id="market-data" className="glass-card rounded p-6 scroll-mt-20">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-headline-sm text-ink">Market Data</h2>
-              <span className="font-mono text-[11px] text-ink-faint">LIVE SYNC</span>
-            </div>
-            <div className="space-y-4">
-              {marketSeries.map((series) => (
-                <div key={series.label} className="flex items-center justify-between p-3 bg-ink/5 rounded">
-                  <div>
-                    <p className="font-mono text-[10px] text-ink-faint uppercase">{series.label}</p>
-                    <p className="text-[20px] font-bold text-ink">
-                      {series.value}{" "}
-                      <span
-                        className={`text-[12px] font-normal ${
-                          series.direction === "up" ? "text-accent" : "text-danger"
-                        }`}
-                      >
-                        {series.change}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="w-24 h-10 flex items-end gap-0.5">
-                    {series.bars.map((h, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 ${series.direction === "up" ? "bg-accent" : "bg-danger"}`}
-                        style={{ height: `${h}%`, opacity: 0.3 + (i / series.bars.length) * 0.7 }}
-                      />
-                    ))}
-                  </div>
+        <Panel
+          className="lg:col-span-4"
+          title="Industrial gas weekly"
+          aside={
+            <Link href="/tech-innovation" className="text-[13px] font-semibold">
+              More →
+            </Link>
+          }
+        >
+          <div className="flex flex-col divide-y divide-border -my-3">
+            {filteredWeekly.length === 0 && <p className="py-3 text-sm text-ink-muted">No results for &ldquo;{q}&rdquo;.</p>}
+            {filteredWeekly.slice(0, 5).map((item, i) => (
+              <a key={i} href={safeUrl(item.sourceUrl)} target="_blank" rel="noopener noreferrer" className="py-3 flex flex-col gap-1 group">
+                <span className="flex justify-between gap-3 eyebrow">
+                  <span className="text-positive">
+                    {item.tag} · {item.region}
+                  </span>
+                  <span>{item.source}</span>
+                </span>
+                <span className="text-[15px] font-semibold leading-snug text-ink group-hover:text-accent">{item.title}</span>
+                <span className="text-[13px] text-ink-muted line-clamp-2">{item.desc}</span>
+              </a>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel className="lg:col-span-3" title="Opportunity radar">
+          <div className="flex flex-col gap-4">
+            {opportunityRadar.map((entry) => (
+              <div key={`${entry.code}-${entry.sector}`} className="flex items-center gap-3">
+                <CountryBadge country={entry.country} className="w-9 h-9 rounded-lg bg-panel-high border border-border-strong text-[11px] text-ink" />
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <span className="font-semibold text-ink">{entry.country}</span>
+                  <span className="text-[12px] text-ink-muted line-clamp-2">{entry.sector}</span>
                 </div>
-              ))}
-            </div>
-          </section>
+                <span className={`font-mono text-[11px] font-semibold uppercase ${entry.tier === "High" ? "text-accent" : "text-ink-muted"}`}>
+                  {entry.tier}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
 
-          <section className="glass-card rounded p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-headline-sm text-ink">Project Highlights</h2>
-              <Link href="/project-tracker" className="font-mono text-[11px] text-accent">
-                VIEW ALL 142 →
-              </Link>
-            </div>
-            <div className="space-y-6">
-              {projectHighlights.map((project) => (
-                <div key={project.title}>
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <p className="text-sm font-bold text-ink">{project.title}</p>
-                      <p className="font-mono text-[11px] text-ink-muted">{project.location}</p>
-                    </div>
-                    <span className={`font-mono ${TONE_TEXT[project.tone]}`}>{project.progress}%</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${TONE_BG[project.tone]}`}
-                      style={{ width: `${project.progress}%` }}
-                    />
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <Panel
+          className="lg:col-span-8"
+          title="Flagship pipeline"
+          aside={
+            <Link href="/project-tracker" className="text-[13px] font-semibold">
+              All projects →
+            </Link>
+          }
+        >
+          <div className="grid grid-cols-[minmax(0,240px)_minmax(0,1fr)_56px] gap-x-5 gap-y-4 items-center">
+            {projectHighlights.map((project) => (
+              <div key={project.title} className="contents">
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold text-ink truncate">{project.title}</span>
+                  <span className="text-[13px] text-ink-muted truncate">{project.location}</span>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="h-3 rounded-full bg-panel-highest">
+                  <div className={`h-3 rounded-full ${TONE_BG[project.tone]}`} style={{ width: `${project.progress}%` }} />
+                </div>
+                <span className="font-mono font-semibold text-right text-ink">{project.progress}%</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
 
-          <section className="glass-card rounded p-6 overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-headline-sm text-ink">Opportunity Radar</h2>
-              <Icon name="radar" size={20} className="text-accent" />
-            </div>
-            <div className="space-y-3">
-              {opportunityRadar.map((entry) => (
+        <Panel className="lg:col-span-4" title="Projects by territory" aside={<span className="eyebrow">Active count</span>}>
+          <div className="grid gap-2.5 items-end h-36" style={{ gridTemplateColumns: `repeat(${tracker.territories.length}, minmax(0, 1fr))` }}>
+            {tracker.territories.map((t) => (
+              <div key={t.country} className="flex flex-col items-center justify-end gap-1.5 h-36">
+                <span className="font-mono text-[12px] font-semibold text-ink">{t.projects}</span>
                 <div
-                  key={entry.code}
-                  className="flex items-center gap-4 p-2 border-b border-border last:border-0"
-                >
-                  <CountryBadge country={entry.country} className="w-8 h-8 rounded bg-panel-high border border-border text-[10px] text-ink" />
-                  <div className="flex-1">
-                    <p className="text-[13px] font-bold text-ink">{entry.country}</p>
-                    <p className="text-[11px] text-ink-muted">{entry.sector}</p>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`px-2 py-0.5 font-mono text-[10px] rounded uppercase ${
-                        entry.tier === "High" ? TONE_CHIP.accent : TONE_CHIP.warning
-                      }`}
-                    >
-                      {entry.tier}
-                    </span>
-                    <p className="text-[10px] text-ink-faint mt-0.5">{entry.potential}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+                  className={`w-full rounded-t-md rounded-b-sm ${OPPORTUNITY_BAR[t.opportunity] ?? "bg-accent/40"}`}
+                  style={{ height: `${Math.max(6, (t.projects / maxProjects) * 100)}px` }}
+                  title={`${t.country}: ${t.projects} projects, ${t.opportunity} opportunity`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-2.5 -mt-3" style={{ gridTemplateColumns: `repeat(${tracker.territories.length}, minmax(0, 1fr))` }}>
+            {tracker.territories.map((t) => (
+              <span key={t.country} className="font-mono text-[11px] text-ink-muted text-center">
+                {countryIso(t.country)}
+              </span>
+            ))}
+          </div>
+          <p className="text-[12px] text-ink-faint">Bright = high opportunity · mid = medium · dim = emerging</p>
+        </Panel>
       </div>
     </div>
   );

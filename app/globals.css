@@ -7,102 +7,91 @@
  * wrapper) so Tailwind's opacity modifiers (e.g. bg-accent/10) work via the
  * withOpacity() helper in tailwind.config.ts: rgb(var(--x) / <alpha-value>).
  * border/border-strong and the glow/glass-hover vars are the exception —
- * they're used as fixed, pre-composed translucent values directly in CSS,
- * not through Tailwind's color-opacity system.
+ * they're used as fixed, pre-composed values directly in CSS, not through
+ * Tailwind's color-opacity system.
  */
 
-/* Dark theme (default) — Cryo Intelligence Command palette */
+/* Dark theme (default) — "Operations Console" palette (design direction B+) */
 :root {
   color-scheme: dark;
 
-  --color-canvas: 15 18 22;
-  --color-surface: 21 26 32;
-  --color-surface-low: 27 33 41;
-  --color-panel: 31 38 46;
-  --color-panel-high: 39 47 57;
-  --color-panel-highest: 49 59 70;
-  --color-floor: 10 13 17;
-  --color-bright: 58 67 78;
+  --color-canvas: 10 16 28;
+  --color-surface: 15 24 41;
+  --color-surface-low: 13 22 38;
+  --color-panel: 15 24 41;
+  --color-panel-high: 19 31 53;
+  --color-panel-highest: 23 34 56;
+  --color-floor: 7 12 22;
+  --color-bright: 42 63 99;
 
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-border: rgb(30 42 64);
+  --color-border-strong: rgb(42 63 99);
 
-  --color-ink: 238 241 244;
-  --color-ink-muted: 154 163 171;
-  --color-ink-faint: 107 116 128;
+  --color-ink: 230 236 244;
+  --color-ink-muted: 169 182 200;
+  --color-ink-faint: 127 143 166;
 
-  /* Gulf Cryo Blue, brightened for legibility on dark surfaces */
-  --color-accent: 97 129 180;
-  --color-accent-soft: 54 88 136;
-  --color-accent-on: 255 255 255;
-  --color-cyan: 97 129 180;
-  --color-cyan-soft: 158 174 202;
+  /* Gulf Cryo Blue, lifted for legibility on navy; text on accent fills is dark */
+  --color-accent: 91 139 208;
+  --color-accent-soft: 143 176 220;
+  --color-accent-on: 8 17 31;
+  --color-cyan: 63 184 201;
+  --color-cyan-soft: 111 208 220;
+  --color-positive: 61 191 138;
 
-  --color-warning: 217 154 78;
+  --color-warning: 240 180 96;
   --color-warning-deep: 138 90 31;
-  --color-danger: 209 112 122;
+  --color-danger: 240 138 108;
   --color-danger-deep: 122 37 48;
 
-  --color-accent-glow-strong: rgba(97, 129, 180, 0.4);
-  --color-accent-glow-none: rgba(97, 129, 180, 0);
+  --color-accent-glow-strong: rgba(91, 139, 208, 0.4);
+  --color-accent-glow-none: rgba(91, 139, 208, 0);
 
-  --color-glass-hover-border: rgba(97, 129, 180, 0.35);
-  --color-glass-hover-bg: rgba(31, 38, 46, 0.6);
-
-  --color-shadow: 0 0 0;
-  --shadow-opacity-1: 0.30;
-  --shadow-opacity-2: 0.42;
-  --card-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 45%);
+  --color-glass-hover-border: rgb(42 63 99);
+  --color-glass-hover-bg: rgb(15 24 41);
 }
 
-/* Light theme — Gulf Cryo corporate light palette (Light Grey / white / Dark Grey text) */
+/* Light theme — same layout, navy ink on cool grey */
 :root.light {
   color-scheme: light;
 
-  --color-canvas: 231 235 239;
+  --color-canvas: 241 244 248;
   --color-surface: 255 255 255;
-  --color-surface-low: 242 244 247;
+  --color-surface-low: 233 238 244;
   --color-panel: 255 255 255;
-  --color-panel-high: 245 247 249;
-  --color-panel-highest: 231 235 239;
+  --color-panel-high: 241 244 248;
+  --color-panel-highest: 228 233 240;
   --color-floor: 255 255 255;
-  --color-bright: 220 225 230;
+  --color-bright: 201 211 224;
 
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-strong: rgba(0, 0, 0, 0.14);
+  --color-border: rgb(220 226 234);
+  --color-border-strong: rgb(195 205 218);
 
-  --color-ink: 32 38 43;
-  --color-ink-muted: 91 94 97;
-  --color-ink-faint: 144 148 150;
+  --color-ink: 20 34 53;
+  --color-ink-muted: 68 85 106;
+  --color-ink-faint: 91 107 126;
 
-  /* Core Gulf Cryo Blue reads fine at full strength against white */
-  --color-accent: 54 88 136;
-  --color-accent-soft: 97 129 180;
+  --color-accent: 44 79 127;
+  --color-accent-soft: 54 88 136;
   --color-accent-on: 255 255 255;
-  --color-cyan: 54 88 136;
-  --color-cyan-soft: 97 129 180;
+  --color-cyan: 18 122 140;
+  --color-cyan-soft: 63 184 201;
+  --color-positive: 23 105 75;
 
-  --color-warning: 181 118 46;
+  --color-warning: 163 102 31;
   --color-warning-deep: 138 90 31;
   --color-danger: 178 58 69;
   --color-danger-deep: 122 37 48;
 
-  --color-accent-glow-strong: rgba(54, 88, 136, 0.3);
-  --color-accent-glow-none: rgba(54, 88, 136, 0);
+  --color-accent-glow-strong: rgba(44, 79, 127, 0.3);
+  --color-accent-glow-none: rgba(44, 79, 127, 0);
 
-  --color-glass-hover-border: rgba(54, 88, 136, 0.3);
-  --color-glass-hover-bg: rgba(231, 235, 239, 0.6);
-
-  --color-shadow: 30 41 59;
-  --shadow-opacity-1: 0.07;
-  --shadow-opacity-2: 0.12;
-  --card-sheen: none;
+  --color-glass-hover-border: rgb(195 205 218);
+  --color-glass-hover-bg: rgb(255 255 255);
 }
 
 body {
   background-color: rgb(var(--color-canvas));
-  background-image: radial-gradient(ellipse 70% 45% at 50% -8%, rgb(var(--color-accent) / 0.10), transparent 60%);
-  background-attachment: fixed;
   color: rgb(var(--color-ink));
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -117,17 +106,24 @@ body {
 }
 
 @layer components {
+  /* Flat console panel. Name kept from the earlier glass style so every
+     existing card picks up the new look from this one rule. */
   .glass-card {
-    @apply border border-border backdrop-blur-lg;
-    background-image: var(--card-sheen);
-    background-color: rgb(var(--color-panel) / 0.5);
-    box-shadow: 0 10px 30px -8px rgb(var(--color-shadow) / var(--shadow-opacity-1));
-    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    @apply border border-border;
+    background-color: rgb(var(--color-surface));
+    transition: border-color 0.2s ease;
   }
   .glass-card:hover {
     border-color: var(--color-glass-hover-border);
-    background-color: var(--color-glass-hover-bg);
-    box-shadow: 0 16px 40px -8px rgb(var(--color-shadow) / var(--shadow-opacity-2));
+  }
+
+  /* Small uppercase mono label used for section/column captions. */
+  .eyebrow {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--color-ink-faint));
   }
 }
 
@@ -138,12 +134,12 @@ body {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(154, 163, 171, 0.2);
+  background: rgb(var(--color-ink-faint) / 0.3);
   border-radius: 2px;
 }
 
 .map-mesh {
-  background-image: radial-gradient(rgba(97, 129, 180, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(var(--color-accent) / 0.08) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 

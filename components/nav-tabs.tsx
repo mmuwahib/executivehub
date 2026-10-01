@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "@/lib/icons";
 import { NAV_ITEMS } from "@/lib/nav";
 
-// Section links for the mobile drawer (desktop uses NavTabs in the header).
-export default function NavList() {
+// Desktop section tabs in the header. Below `lg` the same items live in the
+// MobileNav drawer (via NavList).
+export default function NavTabs() {
   const pathname = usePathname();
 
   return (
-    <>
+    <nav className="hidden lg:flex items-stretch gap-6 h-16" aria-label="Sections">
       {NAV_ITEMS.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
@@ -18,15 +18,16 @@ export default function NavList() {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              active ? "text-ink font-semibold bg-accent/15" : "text-ink-muted hover:text-ink hover:bg-panel-high"
+            className={`flex items-center text-sm border-b-2 transition-colors whitespace-nowrap ${
+              active
+                ? "border-accent text-ink font-semibold"
+                : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
-            <Icon name={item.icon} size={18} />
-            <span className="text-sm">{item.label}</span>
+            {item.label}
           </Link>
         );
       })}
-    </>
+    </nav>
   );
 }

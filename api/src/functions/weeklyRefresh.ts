@@ -1,5 +1,5 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
-import { writeJsonBlob } from "../blobStorage";
+import { readJsonBlob, writeJsonBlob } from "../blobStorage";
 import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
 import { WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
@@ -27,7 +27,7 @@ Aim for genuine regional spread across techArticles (not everything MENA) — in
 
 IMPORTANT: "sourceUrl" must be the exact, real URL of the specific article you found via web_search — not the outlet's homepage, and not a fabricated URL. Do not use Reuters as a source.
 
-IMPORTANT: "publishedAt" is each article's real publication date as shown on the page or in the search result. techArticles must be published within the last 21 days; older items are discarded automatically.
+IMPORTANT: "publishedAt" is each article's real publication date as shown on the page or in the search result. techArticles must be published within the last 21 days; older items are discarded automatically. Spend at least 4 of your searches specifically on recent technology news for techArticles, putting the current month and year in each query (for example "green hydrogen electrolyser news <Month> <Year>"), and prefer the trade press on the allowed list. Do not use background, company-profile or announcement pieces from earlier years.
 
 IMPORTANT: Only cite articles published on these domains: ${allowedDomainsForPrompt()}. Items linking anywhere else are discarded automatically, as are links that are dead or point to a homepage.
 
@@ -60,7 +60,8 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
 
   let text: string;
   try {
-    const research = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 15);
+    // 10 searches, not 15: the last 15-search run read 1.24M input tokens ($4.50).
+    const research = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 10);
     text = research.text;
     context.log(`weeklyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
@@ -77,7 +78,14 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
     return;
   }
 
-  const result = await validateWeekly(parsed);
+  let previous: WeeklyData | null = null;
+  try {
+    previous = await readJsonBlob<WeeklyData>("current-weekly.json");
+  } catch (err) {
+    context.warn("weeklyRefresh: could not read the previous weekly blob; no tech-article fallback this run.", err);
+  }
+
+  const result = await validateWeekly(parsed, {}, previous?.techArticles ?? null);
   for (const drop of result.drops) {
     context.warn(`weeklyRefresh dropped ${drop.where}: ${drop.reason} (${drop.url})`);
   }

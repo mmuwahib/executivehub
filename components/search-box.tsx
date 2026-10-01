@@ -45,7 +45,7 @@ export default function SearchBox() {
 
   return (
     <>
-      <div className="relative hidden md:block">
+      <div className="relative hidden xl:block">
         <Icon
           name="search"
           size={18}
@@ -56,20 +56,20 @@ export default function SearchBox() {
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Search Intelligence..."
-          className="bg-panel-high/50 border-none rounded pl-10 pr-4 py-2 w-64 text-ink text-sm focus:ring-1 focus:ring-accent/50 placeholder:text-ink-faint"
+          className="bg-panel-high/50 border-none rounded pl-10 pr-4 py-2 w-56 text-ink text-sm focus:ring-1 focus:ring-accent/50 placeholder:text-ink-faint"
         />
       </div>
 
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden text-ink-muted hover:text-accent transition-colors"
+        className="xl:hidden text-ink-muted hover:text-accent transition-colors"
         aria-label="Search"
       >
         <Icon name="search" size={20} />
       </button>
 
       {mobileOpen && (
-        <div className="fixed inset-x-0 top-16 z-40 md:hidden bg-surface border-b border-border p-3">
+        <div className="fixed inset-x-0 top-16 z-40 xl:hidden bg-surface border-b border-border p-3">
           <div className="relative">
             <Icon
               name="search"

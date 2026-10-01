@@ -67,9 +67,13 @@ const config: Config = {
           DEFAULT: withOpacity("--color-danger"),
           deep: withOpacity("--color-danger-deep"),
         },
+        // Up-moves and LIVE states. Deliberately not a `Tone` (the API and the
+        // Claude prompt share that union), just a colour.
+        positive: withOpacity("--color-positive"),
       },
       fontFamily: {
         sans: [
+          "var(--font-sans)",
           "Segoe UI",
           "Segoe UI Semilight",
           "-apple-system",

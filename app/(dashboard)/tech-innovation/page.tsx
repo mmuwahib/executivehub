@@ -1,22 +1,37 @@
-import Link from "next/link";
-import { Icon } from "@/lib/icons";
-import { TONE_CHIP, REGION_TONE } from "@/lib/tone";
 import { getTechArticles } from "@/lib/api";
-import PrintButton from "@/components/print-button";
-import VisualTile from "@/components/visual-tile";
-import SourceBadge from "@/components/source-badge";
-import { TechArticle, Region } from "@/lib/types";
 import { safeUrl } from "@/lib/safe-url";
-
-const SIZE_SPAN: Record<TechArticle["size"], string> = {
-  featured: "col-span-12 md:col-span-8",
-  wide: "col-span-12 md:col-span-8",
-  standard: "col-span-12 md:col-span-4",
-  half: "col-span-12 md:col-span-6",
-};
+import { Region, TechArticle } from "@/lib/types";
+import PrintButton from "@/components/print-button";
+import PageHeader from "@/components/page-header";
+import FilterChips from "@/components/filter-chips";
 
 const TAGS = ["Hydrogen", "Renewable", "CCS/CCU", "Innovation"];
 const REGIONS: Region[] = ["MENA", "Europe", "ASEAN", "Americas"];
+
+// One colour per topic, used for the tag label and the topic mix bar.
+const TAG_TEXT: Record<string, string> = {
+  Hydrogen: "text-cyan",
+  Renewable: "text-positive",
+  "CCS/CCU": "text-warning",
+  Innovation: "text-accent",
+};
+const TAG_BAR: Record<string, string> = {
+  Hydrogen: "bg-cyan",
+  Renewable: "bg-positive",
+  "CCS/CCU": "bg-warning",
+  Innovation: "bg-accent",
+};
+
+function Meta({ article }: { article: TechArticle }) {
+  return (
+    <span className="eyebrow flex flex-wrap gap-x-2">
+      <span className={`font-semibold ${TAG_TEXT[article.tag] ?? "text-ink-muted"}`}>{article.tag}</span>
+      <span>
+        · {article.region} · {article.time}
+      </span>
+    </span>
+  );
+}
 
 export default async function TechInnovationPage({
   searchParams,
@@ -27,7 +42,7 @@ export default async function TechInnovationPage({
   const allArticles = await getTechArticles();
 
   const needle = q?.toLowerCase();
-  const techArticles = allArticles.filter((article) => {
+  const articles = allArticles.filter((article) => {
     if (tag && article.tag !== tag) return false;
     if (region && article.region !== region) return false;
     if (needle) {
@@ -40,158 +55,127 @@ export default async function TechInnovationPage({
     return true;
   });
 
-  function withParam(key: string, value?: string) {
+  function withParam(key: "tag" | "region", value?: string) {
     const params = new URLSearchParams();
     if (tag) params.set("tag", tag);
     if (region) params.set("region", region);
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
+    if (value) params.set(key, value);
+    else params.delete(key);
     const query = params.toString();
     return query ? `/tech-innovation?${query}` : "/tech-innovation";
   }
 
+  const featured = articles.find((a) => a.size === "featured") ?? articles[0];
+  const rest = articles.filter((a) => a !== featured);
+  const side = rest.slice(0, 2);
+  const grid = rest.slice(2);
+
+  const topicCounts = TAGS.map((t) => ({ tag: t, count: allArticles.filter((a) => a.tag === t).length })).filter((t) => t.count > 0);
+  const topicTotal = topicCounts.reduce((sum, t) => sum + t.count, 0);
+
   return (
-    <div className="max-w-[1600px] mx-auto">
-      <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-4 mb-6">
-        <div className="space-y-2">
-          <h1 className="text-display-lg text-ink">Technological Innovation</h1>
-          <div className="flex items-center gap-4 text-ink-muted flex-wrap">
-            <span>H2 View • Renewables Now • Gasworld</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span className="text-accent/70">Hydrogen, Renewables & Industrial Gas Technology</span>
-            <span className="font-mono text-[11px] text-ink-faint">({techArticles.length} articles)</span>
-          </div>
-        </div>
-        <PrintButton
-          label="EXPORT"
-          icon="download"
-          className="px-5 py-2 glass-card hover:bg-accent/10 flex items-center gap-2 text-ink font-mono text-[12px] tracking-wider rounded"
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Weekly · updated Sunday"
+        title="Tech & innovation"
+        description="Hydrogen, renewables, CCS/CCU and industrial gas technology worldwide"
+        actions={<PrintButton label="Export PDF" />}
+      />
+
+      <div className="glass-card rounded-xl px-4 py-3 flex flex-wrap justify-between gap-4">
+        <FilterChips
+          label="Topic"
+          chips={[
+            { label: "All", href: withParam("tag"), active: !tag },
+            ...TAGS.map((t) => ({ label: t, href: withParam("tag", t), active: tag === t })),
+          ]}
+        />
+        <FilterChips
+          label="Region"
+          chips={[
+            { label: "All", href: withParam("region"), active: !region },
+            ...REGIONS.map((r) => ({ label: r, href: withParam("region", r), active: region === r })),
+          ]}
         />
       </div>
 
-      <div className="flex flex-col gap-2 mb-8">
-        <div className="flex items-center gap-1 p-1 bg-panel-high rounded-lg border border-border w-fit flex-wrap">
-          <span className="px-2 font-mono text-[10px] text-ink-faint uppercase">Topic:</span>
-          <Link
-            href={withParam("tag")}
-            className={`px-3 py-1.5 text-[11px] font-mono rounded-md ${
-              !tag ? "bg-accent text-accent-on" : "text-ink-faint hover:text-ink"
-            }`}
-          >
-            ALL
-          </Link>
-          {TAGS.map((t) => (
-            <Link
-              key={t}
-              href={withParam("tag", t)}
-              className={`px-3 py-1.5 text-[11px] font-mono rounded-md whitespace-nowrap ${
-                tag === t ? "bg-accent text-accent-on" : "text-ink-faint hover:text-ink"
-              }`}
-            >
-              {t}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-1 p-1 bg-panel-high rounded-lg border border-border w-fit flex-wrap">
-          <span className="px-2 font-mono text-[10px] text-ink-faint uppercase">Region:</span>
-          <Link
-            href={withParam("region")}
-            className={`px-3 py-1.5 text-[11px] font-mono rounded-md ${
-              !region ? "bg-accent text-accent-on" : "text-ink-faint hover:text-ink"
-            }`}
-          >
-            ALL
-          </Link>
-          {REGIONS.map((r) => (
-            <Link
-              key={r}
-              href={withParam("region", r)}
-              className={`px-3 py-1.5 text-[11px] font-mono rounded-md whitespace-nowrap ${
-                region === r ? "bg-accent text-accent-on" : "text-ink-faint hover:text-ink"
-              }`}
-            >
-              {r}
-            </Link>
-          ))}
-        </div>
-      </div>
+      {articles.length === 0 && (
+        <p className="glass-card rounded-xl p-8 text-center text-sm text-ink-muted">
+          {allArticles.length === 0
+            ? "No tech articles from the last 21 days passed the source checks this week."
+            : `No articles match${q ? ` "${q}"` : " these filters"}.`}
+        </p>
+      )}
 
-      {techArticles.length === 0 && (
-        <div className="glass-card rounded p-8 text-center text-ink-muted text-sm">
-          No results{q ? ` for "${q}"` : ""}.
+      {featured && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <a
+            href={safeUrl(featured.sourceUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`glass-card rounded-xl p-7 flex flex-col gap-3.5 group border-accent/40 ${side.length ? "lg:col-span-7" : "lg:col-span-12"}`}
+          >
+            <Meta article={featured} />
+            <span className="text-[26px] font-bold leading-tight tracking-tight text-ink group-hover:text-accent">{featured.title}</span>
+            <span className="text-[15px] text-ink-muted">{featured.desc}</span>
+            <span className="mt-auto text-[13px] font-semibold text-accent">{featured.source} · Read article →</span>
+          </a>
+          {side.length > 0 && (
+            <div className="lg:col-span-5 flex flex-col gap-5">
+              {side.map((article) => (
+                <a
+                  key={article.title}
+                  href={safeUrl(article.sourceUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass-card rounded-xl p-5 flex flex-col gap-2 flex-1 group"
+                >
+                  <Meta article={article} />
+                  <span className="text-[17px] font-bold leading-snug text-ink group-hover:text-accent">{article.title}</span>
+                  <span className="mt-auto text-[13px] text-ink-faint">{article.source}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-4">
-        {techArticles.map((article) => (
-          <article key={article.title} className={SIZE_SPAN[article.size]}>
-            <div className="glass-card p-card h-full flex flex-col rounded">
-              {article.size === "wide" ? (
-                <div className="flex gap-6 h-full">
-                  <div className="flex-1 flex flex-col">
-                    <ArticleHeader article={article} />
-                    <h2 className="text-headline-md text-ink mb-4">{article.title}</h2>
-                    <p className="text-ink-muted text-sm mb-6">{article.desc}</p>
-                    <ArticleFooter article={article} />
-                  </div>
-                  <VisualTile
-                    icon={article.icon ?? "bolt"}
-                    tone={article.tone}
-                    image={article.image}
-                    alt={article.title}
-                    className="w-48 hidden lg:block rounded border border-border"
-                  />
-                </div>
-              ) : (
-                <>
-                  <ArticleHeader article={article} />
-                  <h2 className={article.size === "featured" ? "text-headline-md text-ink mb-4" : "text-headline-sm text-ink mb-4"}>
-                    {article.title}
-                  </h2>
-                  <p className={`text-ink-muted text-sm ${article.size === "featured" ? "mb-8 flex-1 max-w-2xl" : "mb-6"}`}>
-                    {article.desc}
-                  </p>
-                  <ArticleFooter article={article} />
-                </>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  );
-}
+      {grid.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {grid.map((article) => (
+            <a
+              key={article.title}
+              href={safeUrl(article.sourceUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card rounded-xl p-5 flex flex-col gap-2 group"
+            >
+              <Meta article={article} />
+              <span className="text-base font-bold leading-snug text-ink group-hover:text-accent">{article.title}</span>
+              <span className="text-[13px] text-ink-muted line-clamp-3">{article.desc}</span>
+              <span className="mt-auto text-[12px] text-ink-faint">{article.source}</span>
+            </a>
+          ))}
+        </div>
+      )}
 
-function ArticleHeader({ article }: { article: TechArticle }) {
-  return (
-    <div className="flex justify-between items-start mb-6 gap-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className={`px-3 py-1 font-mono text-[10px] tracking-widest uppercase rounded ${TONE_CHIP[article.tone]}`}>
-          {article.tag}
-        </span>
-        <span className={`px-2 py-1 font-mono text-[10px] tracking-widest uppercase rounded ${TONE_CHIP[REGION_TONE[article.region]]}`}>
-          {article.region}
-        </span>
-      </div>
-      <span className="font-mono text-[11px] text-ink-faint opacity-60 shrink-0">{article.time}</span>
-    </div>
-  );
-}
-
-function ArticleFooter({ article }: { article: TechArticle }) {
-  return (
-    <div className="mt-auto flex items-center gap-2 text-ink-muted text-[11px] font-mono">
-      <a
-        href={safeUrl(article.sourceUrl)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:text-accent transition-colors"
-      >
-        <SourceBadge source={article.source} />
-      </a>
+      {topicTotal > 0 && (
+        <div className="glass-card rounded-xl p-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <span className="eyebrow">Topic mix</span>
+          <div className="flex-1 min-w-[200px] flex h-3 rounded-full overflow-hidden" aria-hidden="true">
+            {topicCounts.map((t) => (
+              <span key={t.tag} className={TAG_BAR[t.tag]} style={{ width: `${(t.count / topicTotal) * 100}%` }} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-4 text-[12px] text-ink-muted">
+            {topicCounts.map((t) => (
+              <span key={t.tag}>
+                {t.tag} {t.count}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

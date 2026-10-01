@@ -5,7 +5,7 @@ import { Icon } from "@/lib/icons";
 export default function PrintButton({
   label,
   icon = "download",
-  className = "flex items-center gap-2 px-4 py-2 border border-border text-ink-muted font-mono text-label-caps hover:bg-panel/40 rounded",
+  className = "flex items-center gap-2 h-10 px-4 rounded-lg border border-border-strong bg-panel-high text-ink text-sm font-semibold hover:bg-panel-highest transition-colors",
 }: {
   label: string;
   icon?: string;
