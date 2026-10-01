@@ -3,7 +3,7 @@ import { readJsonBlob, writeJsonBlob } from "../blobStorage";
 import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
 import { WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
-import { validateWeekly } from "../validation";
+import { validateWeekly, TECH_TOPICS, MAX_PER_OUTLET } from "../validation";
 
 const WEEKLY_INTELLIGENCE_PROMPT = `You are an intelligence analyst for GulfCryo, an industrial gas company operating across 10 countries in the Middle East (UAE, Saudi Arabia, Kuwait, Bahrain, Qatar, Oman, Jordan, Iraq, Turkey, Egypt).
 
@@ -20,8 +20,10 @@ Use the web_search tool to research this week's industrial gas industry competit
     "projects": [ { "title": "...", "location": "...", "status": "...", "statusTone": "accent|warning|cyan|danger", "gasDemand": "...", "innovation": "...", "quote": "...", "atcConnection": true|false, "icon": "material-symbol-name", "category": "construction|renewable|sustainability" } ],
     "territories": [ { "country": "...", "projects": 0, "innovationPct": 0-100, "sector": "...", "opportunity": "HIGH|MEDIUM|EMERGING", "trend": "up|down|flat" } ]
   },
-  "techArticles": [ { "tag": "...", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
+  "techArticles": [ { "tag": "${TECH_TOPICS.join("|")}", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
 }
+
+IMPORTANT: each techArticles "tag" must be exactly one of: ${TECH_TOPICS.join(", ")}. Use at most ${MAX_PER_OUTLET} articles from any one outlet, and spread the rest across different outlets on the allowed list. Articles with other tags, or beyond ${MAX_PER_OUTLET} per outlet, are discarded automatically.
 
 Aim for genuine regional spread across techArticles (not everything MENA) — include real hydrogen/CCUS/industrial-gas developments from Europe, ASEAN, and the Americas where relevant, not just the Gulf.
 

@@ -23,12 +23,15 @@ export default async function AppHeader() {
             </Suspense>
           }
         />
-        <Link href="/" className="flex items-center gap-3 shrink-0 text-ink hover:no-underline">
-          <span className="w-7 h-7 rounded-md bg-[#365888] text-white flex items-center justify-center text-[12px] font-extrabold">
-            GC
+        <Link href="/" className="flex items-center gap-3 shrink-0 hover:no-underline" aria-label="Gulf Cryo — Overview">
+          {/* Official logo on a white plate: its blue "Cryo" has too little
+              contrast against the dark navy header on its own. */}
+          <span className="flex items-center rounded-md bg-white px-2 py-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Gulf Cryo" width={1600} height={782} className="h-8 w-auto" />
           </span>
-          <span className="text-sm font-bold tracking-[0.06em] whitespace-nowrap">
-            GULF CRYO <span className="hidden sm:inline font-medium text-ink-faint">/ OPERATIONS</span>
+          <span className="hidden sm:inline text-sm font-medium tracking-[0.06em] text-ink-faint whitespace-nowrap">
+            / OPERATIONS
           </span>
         </Link>
 

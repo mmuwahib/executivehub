@@ -37,6 +37,12 @@ const MIN_ITEMS = {
 
 const REQUIRED_COUNTRIES = 10;
 
+// The Tech & Innovation page's topic filters; tech article tags must match.
+export const TECH_TOPICS = ["Hydrogen", "Renewable", "CCS/CCU", "Innovation"] as const;
+
+// Keeps the tech feed from being filled by one outlet.
+export const MAX_PER_OUTLET = 2;
+
 // How recent a sourced item must be (by its publishedAt date) to be published.
 const MAX_AGE_DAYS = {
   daily: 7,
@@ -261,13 +267,33 @@ export async function validateWeekly(
   );
   if (!techArticles) return fail("techArticles is not an array");
 
-  let publishedTech = techArticles;
-  if (techArticles.length < MIN_ITEMS.techArticles) {
+  // Topic tags must be one of the Tech page's filters (case-normalised), and
+  // no single outlet may supply more than MAX_PER_OUTLET articles.
+  const perOutlet = new Map<string, number>();
+  const curated: WeeklyData["techArticles"] = [];
+  for (const article of techArticles) {
+    const topic = TECH_TOPICS.find((t) => t.toLowerCase() === String(article.tag ?? "").trim().toLowerCase());
+    if (!topic) {
+      drops.push({ where: "techArticles", url: article.sourceUrl, reason: `tag "${article.tag}" is not one of ${TECH_TOPICS.join(", ")}` });
+      continue;
+    }
+    const outlet = new URL(article.sourceUrl).hostname.replace(/^www\./, "");
+    const count = perOutlet.get(outlet) ?? 0;
+    if (count >= MAX_PER_OUTLET) {
+      drops.push({ where: "techArticles", url: article.sourceUrl, reason: `more than ${MAX_PER_OUTLET} articles from ${outlet}` });
+      continue;
+    }
+    perOutlet.set(outlet, count + 1);
+    curated.push({ ...article, tag: topic });
+  }
+
+  let publishedTech = curated;
+  if (curated.length < MIN_ITEMS.techArticles) {
     publishedTech = previousTechArticles ?? [];
     drops.push({
       where: "techArticles",
       url: "",
-      reason: `only ${techArticles.length} recent articles passed (need ${MIN_ITEMS.techArticles}); ${
+      reason: `only ${curated.length} recent articles passed (need ${MIN_ITEMS.techArticles}); ${
         previousTechArticles ? "kept the previously published set" : "published none this week"
       }`,
     });

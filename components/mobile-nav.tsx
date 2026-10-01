@@ -68,7 +68,9 @@ export default function MobileNav({ freshnessSlot }: { freshnessSlot?: ReactNode
             className="absolute left-0 top-0 h-full w-[min(80vw,260px)] bg-surface-low border-r border-border flex flex-col outline-none"
           >
             <div className="p-6 flex items-center justify-between">
-              <Logo variant="full" />
+              <span className="flex items-center rounded-md bg-white px-2 py-1">
+                <Logo variant="full" />
+              </span>
               <button
                 onClick={close}
                 className="text-ink-muted hover:text-accent transition-colors"

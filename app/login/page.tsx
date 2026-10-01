@@ -38,11 +38,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm glass-card rounded-lg p-8">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-headline-md font-bold text-ink tracking-tight">Gulf Cryo</span>
+        <div className="inline-flex items-center rounded-md bg-white px-3 py-2 mb-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Gulf Cryo" width={1600} height={782} className="h-12 w-auto" />
         </div>
-        <p className="font-mono text-[10px] text-accent/70 tracking-widest uppercase mb-6">
-          Executive Intelligence
+        <p className="font-mono text-[11px] text-ink-faint tracking-widest uppercase mb-6">
+          Executive Intelligence · Operations
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center border border-border px-3 py-2 gap-2 rounded">
