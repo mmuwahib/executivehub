@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { researchJson, formatUsage, skipLocalRefresh } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
 import { DailyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { validateDaily } from "../validation";
@@ -20,9 +20,9 @@ Once your research is complete, respond with a single JSON object (no markdown, 
       { "label": "Active Projects", "value": "...", "delta": "...", "icon": "layers", "tone": "neutral" },
       { "label": "GC Opportunity Score", "value": "...", "delta": "...", "icon": "radar", "tone": "accent" }
     ],
-    "geoPulse": [ { "tag": "WARNING|MONITOR", "title": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "time": "..." } ],
-    "industryWeekly": [ { "tag": "...", "tone": "accent|cyan|warning|danger|neutral", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "region": "MENA|Europe|ASEAN|Americas" } ],
-    "leadershipMoves": [ { "company": "Linde|Air Products|Air Liquide|Messer|...", "initials": "2-letter", "role": "...", "region": "MENA|Europe|ASEAN|Americas", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search" } ],
+    "geoPulse": [ { "tag": "WARNING|MONITOR", "title": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "time": "..." } ],
+    "industryWeekly": [ { "tag": "...", "tone": "accent|cyan|warning|danger|neutral", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "region": "MENA|Europe|ASEAN|Americas" } ],
+    "leadershipMoves": [ { "company": "Linde|Air Products|Air Liquide|Messer|...", "initials": "2-letter", "role": "the new title, e.g. 'Regional President, Middle East & Africa'", "region": "MENA|Europe|ASEAN|Americas", "desc": "who was appointed and why it matters", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD" } ],
     "projectHighlights": [ { "title": "...", "location": "...", "progress": 0-100, "tone": "..." } ],
     "opportunityRadar": [ { "code": "2-letter country code", "country": "...", "sector": "...", "tier": "High|Moderate", "potential": "..." } ]
   },
@@ -31,13 +31,17 @@ Once your research is complete, respond with a single JSON object (no markdown, 
     "riskRegions": [ { "name": "...", "pct": 0-100, "tone": "..." } ],
     "criticalIncident": { "title": "...", "desc": "...", "time": "...", "lat": 0.0, "lng": 0.0, "source": "...", "sourceUrl": "https://exact-article-url-from-search" },
     "countryRisk": [ { "country": "Saudi Arabia|UAE|Kuwait|Bahrain|Qatar|Oman|Jordan|Iraq|Turkey|Egypt", "lat": 0.0, "lng": 0.0, "tier": "high|moderate|low" } ],
-    "articles": [ { "tag": "WARNING|MONITOR", "region": "...", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search" } ]
+    "articles": [ { "tag": "WARNING|MONITOR", "region": "...", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD" } ]
   }
 }
 
 IMPORTANT: "sourceUrl" must be the exact, real URL of the specific article you found via web_search — not the outlet's homepage, and not a fabricated URL. Every sourceUrl must come directly from a search result you actually retrieved.
 
 IMPORTANT: Only cite articles published on these domains: ${allowedDomainsForPrompt()}. Items linking anywhere else are discarded automatically, as are links that are dead or point to a homepage. "countryRisk" must contain exactly one entry for each of the 10 countries listed above, using those exact country names.
+
+IMPORTANT: "publishedAt" is the article's real publication date as shown on the page or in the search result. geoPulse, industryWeekly and geopolitical articles must be published within the last 7 days; leadershipMoves within the last 30 days. Older items are discarded automatically, so do not reuse old stories.
+
+IMPORTANT: "leadershipMoves" are only genuine executive appointments, promotions or departures at competitors (a named person taking or leaving a named role). Do not turn earnings, strategy or interview stories into leadership items. If you find no real appointment in the last 30 days, return an empty array.
 
 IMPORTANT: Do not use Reuters as a source. Pick the real English-language outlet native to the story's own country: Khaleej Times only for UAE-datelined stories, Arab News for Saudi Arabia-datelined stories, Al Jazeera for pan-regional or cross-border stories with no single-country angle. Never use an outlet from a different country than the story it's attached to.
 
@@ -64,6 +68,7 @@ export async function dailyRefresh(myTimer: Timer, context: InvocationContext): 
     context.log(`dailyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
     context.error("dailyRefresh: research call failed; keeping previous data.", err);
+    if (err instanceof ResearchError) context.warn(`dailyRefresh usage (failed run): ${formatUsage(err.usage)}`);
     return;
   }
 

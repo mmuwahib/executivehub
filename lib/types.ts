@@ -31,6 +31,7 @@ export interface GeoPulseItem {
   title: string;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
   time: string;
 }
 
@@ -41,6 +42,7 @@ export interface IndustryHighlight {
   desc: string;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
   region: Region;
   image?: string;
 }
@@ -53,6 +55,7 @@ export interface LeadershipAppointment {
   desc: string;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
 }
 
 export interface MarketSeries {
@@ -112,6 +115,7 @@ export interface CriticalIncident {
   lng: number;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
 }
 
 export interface CountryRiskPoint {
@@ -129,6 +133,7 @@ export interface IntelArticle {
   desc: string;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
 }
 
 export interface GeopoliticalData {
@@ -234,6 +239,7 @@ export interface TechArticle {
   desc: string;
   source: string;
   sourceUrl: string;
+  publishedAt?: string; // YYYY-MM-DD, from the live refresh
   size: "featured" | "wide" | "standard" | "half";
   icon?: string;
   image?: string;

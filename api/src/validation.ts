@@ -8,7 +8,8 @@ import { DailyData, WeeklyData } from "./types";
 // What is checked:
 //  - structure: every array/object the pages .map() over exists
 //  - each sourced item: https URL, host on the allow-list (outlets.ts), a
-//    specific article path (not a homepage), no duplicate URLs
+//    specific article path (not a homepage), a recent publishedAt date
+//    (MAX_AGE_DAYS), no duplicate URLs
 //  - reachability: items whose link is definitively dead are dropped
 //  - minimum item counts per section, else the whole run is rejected
 
@@ -35,6 +36,13 @@ const MIN_ITEMS = {
 };
 
 const REQUIRED_COUNTRIES = 10;
+
+// How recent a sourced item must be (by its publishedAt date) to be published.
+const MAX_AGE_DAYS = {
+  daily: 7,
+  leadership: 30,
+  weekly: 21,
+};
 
 type Obj = Record<string, unknown>;
 
@@ -89,12 +97,27 @@ async function deadLinkReason(rawUrl: string): Promise<string | null> {
 // Filters one array of sourced items in place of the model's output. Items
 // that are not objects, lack a title/source, or have a bad link are dropped
 // and recorded in `drops`.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Model output gives each item's publication date as "publishedAt"
+// (YYYY-MM-DD). Missing, unparseable, too old or future-dated → a reason.
+function ageProblem(raw: unknown, maxAgeDays: number): string | null {
+  if (!isStr(raw)) return "missing publishedAt date";
+  const published = Date.parse(raw);
+  if (Number.isNaN(published)) return `unparseable publishedAt (${raw})`;
+  const ageDays = (Date.now() - published) / DAY_MS;
+  if (ageDays < -1) return `publishedAt is in the future (${raw})`;
+  if (ageDays > maxAgeDays) return `published ${Math.floor(ageDays)} days ago (limit ${maxAgeDays})`;
+  return null;
+}
+
 async function filterSourced<T extends { sourceUrl: string }>(
   raw: unknown,
   where: string,
   drops: Drop[],
   opts: ValidationOptions,
-  requiredStrings: string[]
+  requiredStrings: string[],
+  maxAgeDays: number
 ): Promise<T[] | null> {
   if (!Array.isArray(raw)) return null;
 
@@ -112,7 +135,7 @@ async function filterSourced<T extends { sourceUrl: string }>(
       drops.push({ where, url, reason: `missing ${missing}` });
       continue;
     }
-    const problem = staticUrlProblem(item.sourceUrl);
+    const problem = staticUrlProblem(item.sourceUrl) ?? ageProblem(item.publishedAt, maxAgeDays);
     if (problem) {
       drops.push({ where, url, reason: problem });
       continue;
@@ -154,16 +177,16 @@ export async function validateDaily(raw: unknown, opts: ValidationOptions = {}):
   if ((dashboard.kpis as unknown[]).length === 0) return fail("dashboard.kpis is empty");
 
   const geoPulse = await filterSourced<DailyData["dashboard"]["geoPulse"][number]>(
-    dashboard.geoPulse, "dashboard.geoPulse", drops, opts, ["title", "source"]
+    dashboard.geoPulse, "dashboard.geoPulse", drops, opts, ["title", "source"], MAX_AGE_DAYS.daily
   );
   const industryWeekly = await filterSourced<DailyData["dashboard"]["industryWeekly"][number]>(
-    dashboard.industryWeekly, "dashboard.industryWeekly", drops, opts, ["title", "desc", "source"]
+    dashboard.industryWeekly, "dashboard.industryWeekly", drops, opts, ["title", "desc", "source"], MAX_AGE_DAYS.daily
   );
   const leadershipMoves = await filterSourced<DailyData["dashboard"]["leadershipMoves"][number]>(
-    dashboard.leadershipMoves, "dashboard.leadershipMoves", drops, opts, ["company", "role", "desc", "source"]
+    dashboard.leadershipMoves, "dashboard.leadershipMoves", drops, opts, ["company", "role", "desc", "source"], MAX_AGE_DAYS.leadership
   );
   const articles = await filterSourced<DailyData["geopolitical"]["articles"][number]>(
-    geopolitical.articles, "geopolitical.articles", drops, opts, ["title", "desc", "source"]
+    geopolitical.articles, "geopolitical.articles", drops, opts, ["title", "desc", "source"], MAX_AGE_DAYS.daily
   );
 
   if (!geoPulse) return fail("dashboard.geoPulse is not an array");
@@ -226,7 +249,7 @@ export async function validateWeekly(raw: unknown, opts: ValidationOptions = {})
   }
 
   const techArticles = await filterSourced<WeeklyData["techArticles"][number]>(
-    raw.techArticles, "techArticles", drops, opts, ["title", "desc", "source"]
+    raw.techArticles, "techArticles", drops, opts, ["title", "desc", "source"], MAX_AGE_DAYS.weekly
   );
   if (!techArticles) return fail("techArticles is not an array");
   if (techArticles.length < MIN_ITEMS.techArticles) {

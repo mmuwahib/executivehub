@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { researchJson, formatUsage, skipLocalRefresh } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
 import { WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { validateWeekly } from "../validation";
@@ -20,12 +20,14 @@ Use the web_search tool to research this week's industrial gas industry competit
     "projects": [ { "title": "...", "location": "...", "status": "...", "statusTone": "accent|warning|cyan|danger", "gasDemand": "...", "innovation": "...", "quote": "...", "atcConnection": true|false, "icon": "material-symbol-name", "category": "construction|renewable|sustainability" } ],
     "territories": [ { "country": "...", "projects": 0, "innovationPct": 0-100, "sector": "...", "opportunity": "HIGH|MEDIUM|EMERGING", "trend": "up|down|flat" } ]
   },
-  "techArticles": [ { "tag": "...", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
+  "techArticles": [ { "tag": "...", "tone": "accent|cyan|warning", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "size": "featured|wide|standard|half", "icon": "material-symbol-name", "region": "MENA|Europe|ASEAN|Americas" } ]
 }
 
 Aim for genuine regional spread across techArticles (not everything MENA) — include real hydrogen/CCUS/industrial-gas developments from Europe, ASEAN, and the Americas where relevant, not just the Gulf.
 
 IMPORTANT: "sourceUrl" must be the exact, real URL of the specific article you found via web_search — not the outlet's homepage, and not a fabricated URL. Do not use Reuters as a source.
+
+IMPORTANT: "publishedAt" is each article's real publication date as shown on the page or in the search result. techArticles must be published within the last 21 days; older items are discarded automatically.
 
 IMPORTANT: Only cite articles published on these domains: ${allowedDomainsForPrompt()}. Items linking anywhere else are discarded automatically, as are links that are dead or point to a homepage.
 
@@ -63,6 +65,7 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
     context.log(`weeklyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
     context.error("weeklyRefresh: research call failed; keeping previous data.", err);
+    if (err instanceof ResearchError) context.warn(`weeklyRefresh usage (failed run): ${formatUsage(err.usage)}`);
     return;
   }
 

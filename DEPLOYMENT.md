@@ -23,8 +23,11 @@ tool available) — the steps below use the Azure Portal, with an equivalent
 The App Service needs to know the Function App's URL, so create this one first.
 
 **Portal:** Create a resource → **Function App** →
-- Runtime stack: **Node.js 20 LTS**, OS: **Linux**, Plan: **Consumption** (or
-  Premium if you want to avoid cold starts on timer triggers)
+- Runtime stack: **Node.js 20 LTS**, OS: **Linux**, Plan: **Flex Consumption**
+  (or Premium). **Not the classic Consumption plan**: a research refresh took
+  about 14 minutes in testing, and classic Consumption stops any function at
+  10 minutes. `api/host.json` sets `functionTimeout` to 30 minutes, which the
+  classic plan rejects.
 - It will ask you to create a **Storage Account** alongside it — required,
   this is where `writeJsonBlob`/`getDispatch` read and write
   `current-daily.json` / `current-weekly.json` / `markets-latest.json`.
@@ -32,8 +35,8 @@ The App Service needs to know the Function App's URL, so create this one first.
 ```bash
 az functionapp create \
   --resource-group <rg> \
-  --consumption-plan-location <region> \
-  --runtime node --runtime-version 20 --functions-version 4 \
+  --flexconsumption-location <region> \
+  --runtime node --runtime-version 20 \
   --name <function-app-name> \
   --storage-account <storage-account-name>
 ```
