@@ -151,6 +151,13 @@ Every daily/weekly refresh is checked before it is published
 - **Freshness**: the topbar badge shows Live, then Stale once the last good
   daily refresh is over 36 hours old. `generated_at` is stamped by the
   function, not taken from Claude.
+- **Cost control**: each daily/weekly run logs its usage
+  (`dailyRefresh usage: N API call(s), X input + Y output tokens, S web
+  searches, est. $Z`). Locally, refreshes are skipped unless
+  `ALLOW_LOCAL_REFRESH` is `true` in `api/local.settings.json`, because the
+  timers also fire whenever the Functions host starts. Set it to `true` only
+  when you want a paid test run, then set it back. In Azure the guard is off
+  automatically.
 - **Geopolitical section**: hidden by default. To show it again, set the
   GitHub repo variable `NEXT_PUBLIC_SHOW_GEOPOLITICAL` to `true`
   (Settings → Secrets and variables → Actions → Variables) and redeploy the

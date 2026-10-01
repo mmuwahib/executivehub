@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { researchJson } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh } from "../claude";
 import { DailyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { validateDaily } from "../validation";
@@ -46,6 +46,11 @@ Your FINAL message must contain ONLY the JSON object and nothing else — no pre
 export async function dailyRefresh(myTimer: Timer, context: InvocationContext): Promise<void> {
   context.log("dailyRefresh triggered at", new Date().toISOString());
 
+  if (skipLocalRefresh()) {
+    context.warn("dailyRefresh skipped: running locally and ALLOW_LOCAL_REFRESH is not 'true' (avoids spending API credit on host restarts).");
+    return;
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     context.error("ANTHROPIC_API_KEY is not set. Skipping dailyRefresh.");
@@ -54,7 +59,9 @@ export async function dailyRefresh(myTimer: Timer, context: InvocationContext): 
 
   let text: string;
   try {
-    text = await researchJson(apiKey, DAILY_INTELLIGENCE_PROMPT, 12);
+    const research = await researchJson(apiKey, DAILY_INTELLIGENCE_PROMPT, 12);
+    text = research.text;
+    context.log(`dailyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
     context.error("dailyRefresh: research call failed; keeping previous data.", err);
     return;

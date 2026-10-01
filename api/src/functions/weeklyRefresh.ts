@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { researchJson } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh } from "../claude";
 import { WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { validateWeekly } from "../validation";
@@ -45,6 +45,11 @@ function getIsoWeek(date: Date): string {
 export async function weeklyRefresh(myTimer: Timer, context: InvocationContext): Promise<void> {
   context.log("weeklyRefresh triggered at", new Date().toISOString());
 
+  if (skipLocalRefresh()) {
+    context.warn("weeklyRefresh skipped: running locally and ALLOW_LOCAL_REFRESH is not 'true' (avoids spending API credit on host restarts).");
+    return;
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     context.error("ANTHROPIC_API_KEY is not set. Skipping weeklyRefresh.");
@@ -53,7 +58,9 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
 
   let text: string;
   try {
-    text = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 15);
+    const research = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 15);
+    text = research.text;
+    context.log(`weeklyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
     context.error("weeklyRefresh: research call failed; keeping previous data.", err);
     return;

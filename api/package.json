@@ -8,7 +8,7 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start",
-    "azurite": "azurite --silent --location .azurite --debug .azurite/debug.log",
+    "azurite": "azurite --silent --skipApiVersionCheck --location .azurite --debug .azurite/debug.log",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
