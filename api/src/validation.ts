@@ -1,12 +1,15 @@
 import { isAllowedHost } from "./outlets";
-import { DailyData, WeeklyData } from "./types";
+import { DailyData, TechData, WeeklyData } from "./types";
 
 // Guardrails between Claude's output and Blob Storage. The refresh functions
-// call validateDaily/validateWeekly after JSON.parse and only write the blob
-// when the result is ok, so a bad run can never replace the last good data.
+// call validateDaily/validateWeekly/validateTech after JSON.parse and only
+// write the blob when the result is ok, so a bad run can never replace the
+// last good data.
 //
 // What is checked:
 //  - structure: every array/object the pages .map() over exists
+//  - judgements (ratings, scores, KPIs): their "basis" is trimmed and their
+//    "sources" must pass the same link rules as articles; never invented
 //  - each sourced item: https URL, host on the allow-list (outlets.ts), a
 //    specific article path (not a homepage), a recent publishedAt date
 //    (MAX_AGE_DAYS), no duplicate URLs
@@ -168,6 +171,69 @@ function arrayOrNull(v: unknown): unknown[] | null {
   return Array.isArray(v) ? v : null;
 }
 
+const MAX_SOURCES = 3;
+const MAX_BASIS_CHARS = 500;
+
+// Keeps a judgement (a rating, score or KPI) but cleans its "why": each
+// source must pass the same link rules as articles, and a missing basis is
+// counted, never invented. The judgement itself is never dropped here.
+function cleanExplained(value: unknown, where: string, drops: Drop[], missing: { count: number }): unknown {
+  if (!isObj(value)) return value;
+  const out: Obj = { ...value };
+  if (isStr(value.basis)) {
+    out.basis = value.basis.trim().slice(0, MAX_BASIS_CHARS);
+  } else {
+    delete out.basis;
+    missing.count += 1;
+  }
+  const kept: { title: string; url: string }[] = [];
+  for (const source of Array.isArray(value.sources) ? value.sources : []) {
+    const url = isObj(source) ? source.url : undefined;
+    const problem = staticUrlProblem(url);
+    if (problem) {
+      drops.push({ where: `${where} source`, url: String(url ?? ""), reason: problem });
+      continue;
+    }
+    const title = isObj(source) && isStr(source.title) ? source.title : new URL(String(url)).hostname.replace(/^www\./, "");
+    kept.push({ title, url: String(url) });
+    if (kept.length >= MAX_SOURCES) break;
+  }
+  if (kept.length) out.sources = kept;
+  else delete out.sources;
+  return out;
+}
+
+function noteMissingBasis(where: string, missing: { count: number }, total: number, drops: Drop[]) {
+  if (missing.count > 0) {
+    drops.push({ where, url: "", reason: `${missing.count} of ${total} judgements have no basis (shown without reasoning)` });
+  }
+}
+
+function explainList(items: unknown, where: string, drops: Drop[]): unknown {
+  if (!Array.isArray(items)) return items;
+  const missing = { count: 0 };
+  const cleaned = items.map((item, i) => cleanExplained(item, `${where}[${i}]`, drops, missing));
+  noteMissingBasis(where, missing, items.length, drops);
+  return cleaned;
+}
+
+const COMPETITOR_KEYS = ["linde", "airProducts", "airLiquide", "messer", "gcOpportunity"] as const;
+
+function explainCompetitors(rows: unknown, drops: Drop[]): unknown {
+  if (!Array.isArray(rows)) return rows;
+  const missing = { count: 0 };
+  const cleaned = rows.map((row) => {
+    if (!isObj(row)) return row;
+    const out: Obj = { ...row };
+    for (const key of COMPETITOR_KEYS) {
+      out[key] = cleanExplained(row[key], `industrySummary.competitors.${String(row.country)}.${key}`, drops, missing);
+    }
+    return out;
+  });
+  noteMissingBasis("industrySummary.competitors", missing, rows.length * COMPETITOR_KEYS.length, drops);
+  return cleaned;
+}
+
 export async function validateDaily(raw: unknown, opts: ValidationOptions = {}): Promise<Validated<DailyData>> {
   const drops: Drop[] = [];
   const fail = (reason: string): Validated<DailyData> => ({ ok: false, reason, drops });
@@ -231,22 +297,23 @@ export async function validateDaily(raw: unknown, opts: ValidationOptions = {}):
     // The freshness badge trusts this, so stamp it server-side rather than
     // accepting whatever timestamp the model wrote.
     generated_at: new Date().toISOString(),
-    dashboard: { ...dashboard, geoPulse, industryWeekly, leadershipMoves },
+    dashboard: {
+      ...dashboard,
+      kpis: explainList(dashboard.kpis, "dashboard.kpis", drops),
+      opportunityRadar: explainList(dashboard.opportunityRadar, "dashboard.opportunityRadar", drops),
+      geoPulse,
+      industryWeekly,
+      leadershipMoves,
+    },
     geopolitical: { ...geopolitical, articles },
   } as unknown as DailyData;
 
   return { ok: true, data, drops };
 }
 
-// `previousTechArticles` is the last published set. Tech news is the section
-// most likely to come back stale; when too few recent articles survive, the
-// previous set is kept so the (independent) industry and project analysis
-// still publishes instead of the whole run being thrown away.
-export async function validateWeekly(
-  raw: unknown,
-  opts: ValidationOptions = {},
-  previousTechArticles: WeeklyData["techArticles"] | null = null
-): Promise<Validated<WeeklyData>> {
+// Industry summary + project tracker (the weekly run). Tech articles now have
+// their own run and validator (validateTech).
+export async function validateWeekly(raw: unknown): Promise<Validated<WeeklyData>> {
   const drops: Drop[] = [];
   const fail = (reason: string): Validated<WeeklyData> => ({ ok: false, reason, drops });
 
@@ -262,7 +329,37 @@ export async function validateWeekly(
     if (!arrayOrNull(projectTracker[key])) return fail(`projectTracker.${key} is not an array`);
   }
 
-  const techArticles = await filterSourced<WeeklyData["techArticles"][number]>(
+  const data = {
+    industrySummary: {
+      ...industrySummary,
+      competitors: explainCompetitors(industrySummary.competitors, drops),
+      opportunities: explainList(industrySummary.opportunities, "industrySummary.opportunities", drops),
+      whiteSpace: explainList(industrySummary.whiteSpace, "industrySummary.whiteSpace", drops),
+    },
+    projectTracker: {
+      ...projectTracker,
+      kpis: explainList(projectTracker.kpis, "projectTracker.kpis", drops),
+    },
+  } as unknown as WeeklyData;
+
+  return { ok: true, data, drops };
+}
+
+// Tech & innovation articles (their own weekly run). `previousTechArticles`
+// is the last published set: tech news is the section most likely to come
+// back stale, so when too few recent articles survive the previous set is
+// kept rather than emptying the page.
+export async function validateTech(
+  raw: unknown,
+  opts: ValidationOptions = {},
+  previousTechArticles: TechData["techArticles"] | null = null
+): Promise<Validated<TechData>> {
+  const drops: Drop[] = [];
+  const fail = (reason: string): Validated<TechData> => ({ ok: false, reason, drops });
+
+  if (!isObj(raw)) return fail("top-level value is not an object");
+
+  const techArticles = await filterSourced<TechData["techArticles"][number]>(
     raw.techArticles, "techArticles", drops, opts, ["title", "desc", "source"], MAX_AGE_DAYS.weekly
   );
   if (!techArticles) return fail("techArticles is not an array");
@@ -270,7 +367,7 @@ export async function validateWeekly(
   // Topic tags must be one of the Tech page's filters (case-normalised), and
   // no single outlet may supply more than MAX_PER_OUTLET articles.
   const perOutlet = new Map<string, number>();
-  const curated: WeeklyData["techArticles"] = [];
+  const curated: TechData["techArticles"] = [];
   for (const article of techArticles) {
     const topic = TECH_TOPICS.find((t) => t.toLowerCase() === String(article.tag ?? "").trim().toLowerCase());
     if (!topic) {
@@ -299,6 +396,6 @@ export async function validateWeekly(
     });
   }
 
-  const data = { ...raw, techArticles: publishedTech } as unknown as WeeklyData;
+  const data: TechData = { generated_at: new Date().toISOString(), techArticles: publishedTech };
   return { ok: true, data, drops };
 }

@@ -5,6 +5,17 @@ export type Tone = "accent" | "cyan" | "warning" | "danger" | "neutral";
 export type Direction = "up" | "down" | "flat";
 export type Region = "MENA" | "Europe" | "ASEAN" | "Americas";
 export type RiskTier = "high" | "moderate" | "low";
+// "Why and how" behind a judgement: a short reason naming the evidence, and
+// the articles it rests on. Optional — sample data has none.
+export interface SourceRef {
+  title: string;
+  url: string;
+}
+
+export interface Explained {
+  basis?: string;
+  sources?: SourceRef[];
+}
 
 export interface TickerItem {
   label: string;
@@ -13,7 +24,7 @@ export interface TickerItem {
   direction: Direction;
 }
 
-export interface KpiStat {
+export interface KpiStat extends Explained {
   label: string;
   value: string;
   suffix?: string;
@@ -71,7 +82,7 @@ export interface ProjectHighlight {
   tone: Tone;
 }
 
-export interface OpportunityEntry {
+export interface OpportunityEntry extends Explained {
   code: string;
   country: string;
   sector: string;
@@ -144,7 +155,7 @@ export interface GeopoliticalData {
 
 // ---- Industry Summary ----
 
-export interface CompetitorCell {
+export interface CompetitorCell extends Explained {
   value: string;
   tone: Tone;
 }
@@ -158,7 +169,7 @@ export interface CompetitorRow {
   gcOpportunity: CompetitorCell;
 }
 
-export interface GrowthOpportunity {
+export interface GrowthOpportunity extends Explained {
   code: string;
   country: string;
   sector: string;
@@ -170,7 +181,7 @@ export interface GrowthOpportunity {
   progress: number;
 }
 
-export interface WhiteSpaceSector {
+export interface WhiteSpaceSector extends Explained {
   icon: string;
   tier: "HIGH" | "MEDIUM" | "EMERGING";
   tone: Tone;
@@ -187,7 +198,7 @@ export interface IndustrySummaryData {
 
 // ---- Project Tracker ----
 
-export interface TrackerKpi {
+export interface TrackerKpi extends Explained {
   label: string;
   value: string;
   suffix?: string;
@@ -249,6 +260,14 @@ export interface TechArticle {
 export interface WeeklyData {
   industrySummary: IndustrySummaryData;
   projectTracker: ProjectTrackerData;
+  // Older weekly blobs carried tech articles; they now come from techRefresh.
+  techArticles?: TechArticle[];
+}
+
+// ---- Tech bundle (tech & innovation articles, its own weekly run) ----
+
+export interface TechData {
+  generated_at: string;
   techArticles: TechArticle[];
 }
 

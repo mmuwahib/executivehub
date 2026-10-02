@@ -4,6 +4,8 @@ import CompetitorHeatmap from "@/components/competitor-heatmap";
 import PageHeader from "@/components/page-header";
 import FilterChips from "@/components/filter-chips";
 import Panel from "@/components/panel";
+import InsightPopover from "@/components/insight-popover";
+import { OPPORTUNITY_SCORE, WHITE_SPACE_TIER } from "@/lib/methodology";
 import { Tone } from "@/lib/types";
 
 const OPPORTUNITY_TIERS = ["High", "Moderate", "Contested"];
@@ -86,10 +88,19 @@ export default async function IndustrySummaryPage({
                     <span className="text-xl font-bold text-ink">{opp.country}</span>
                     <span className="text-[13px] text-ink-muted">{opp.sector}</span>
                   </div>
-                  <div className="flex flex-col items-end">
+                  <InsightPopover
+                    insight={{
+                      heading: `${opp.country} · ${opp.sector}: ${opp.score}/100`,
+                      definition: OPPORTUNITY_SCORE,
+                      basis: opp.basis,
+                      sources: opp.sources,
+                    }}
+                    label={`How the ${opp.country} score of ${opp.score} was reached`}
+                    className="flex flex-col items-end rounded-md px-1.5 py-1 hover:bg-panel-high"
+                  >
                     <span className="text-[34px] font-extrabold leading-none text-accent">{opp.score}</span>
-                    <span className="eyebrow text-[10px]">Score</span>
-                  </div>
+                    <span className="eyebrow text-[10px] underline decoration-dotted underline-offset-2">Score · why</span>
+                  </InsightPopover>
                 </div>
                 <p className="m-0 text-sm text-ink-muted">{opp.summary}</p>
                 <div className="rounded-lg bg-panel-high p-3 flex flex-col gap-1">
@@ -119,9 +130,18 @@ export default async function IndustrySummaryPage({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
           {filteredWhiteSpace.map((sector) => (
             <article key={sector.title} className="glass-card rounded-xl p-5 flex flex-col gap-2.5">
-              <span className={`self-start font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md ${TIER_CHIP[sector.tone]}`}>
+              <InsightPopover
+                insight={{
+                  heading: `${sector.title}: ${sector.tier}`,
+                  definition: WHITE_SPACE_TIER[sector.tier],
+                  basis: sector.basis,
+                  sources: sector.sources,
+                }}
+                label={`Why ${sector.title} is rated ${sector.tier}`}
+                className={`self-start font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md underline decoration-dotted underline-offset-2 ${TIER_CHIP[sector.tone]}`}
+              >
                 {sector.tier}
-              </span>
+              </InsightPopover>
               <span className="text-[17px] font-bold text-ink">{sector.title}</span>
               <span className="text-sm text-ink-muted">{sector.desc}</span>
               <span className="mt-auto pt-2.5 border-t border-border text-[13px] text-accent">GC angle: {sector.angle}</span>

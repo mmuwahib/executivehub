@@ -3,6 +3,7 @@ import { writeJsonBlob } from "../blobStorage";
 import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
 import { DailyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
+import { methodologyForPrompt } from "../methodology";
 import { validateDaily } from "../validation";
 
 const DAILY_INTELLIGENCE_PROMPT = `You are an intelligence analyst for GulfCryo, an industrial gas company operating across 10 countries in the Middle East (UAE, Saudi Arabia, Kuwait, Bahrain, Qatar, Oman, Jordan, Iraq, Turkey, Egypt).
@@ -15,16 +16,16 @@ Once your research is complete, respond with a single JSON object (no markdown, 
   "generated_at": "ISO 8601 timestamp",
   "dashboard": {
     "kpis": [
-      { "label": "Geopolitical Risk", "value": "...", "delta": "...", "icon": "warning", "tone": "danger|accent|warning|neutral" },
-      { "label": "Industry Status", "value": "...", "delta": "...", "icon": "verified", "tone": "..." },
-      { "label": "Active Projects", "value": "...", "delta": "...", "icon": "layers", "tone": "neutral" },
-      { "label": "GC Opportunity Score", "value": "...", "delta": "...", "icon": "radar", "tone": "accent" }
+      { "label": "Geopolitical Risk", "value": "...", "delta": "...", "icon": "warning", "tone": "danger|accent|warning|neutral", "basis": "what this rests on" },
+      { "label": "Industry Status", "value": "...", "delta": "...", "icon": "verified", "tone": "...", "basis": "what this rests on", "sources": [ { "title": "...", "url": "https://exact-article-url-from-search" } ] },
+      { "label": "Active Projects", "value": "...", "delta": "...", "icon": "layers", "tone": "neutral", "basis": "what the figure counts and where it comes from" },
+      { "label": "GC Opportunity Score", "value": "...", "delta": "...", "icon": "radar", "tone": "accent", "basis": "how the score was reached", "sources": [...] }
     ],
     "geoPulse": [ { "tag": "WARNING|MONITOR", "title": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "time": "..." } ],
     "industryWeekly": [ { "tag": "...", "tone": "accent|cyan|warning|danger|neutral", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "region": "MENA|Europe|ASEAN|Americas" } ],
     "leadershipMoves": [ { "company": "Linde|Air Products|Air Liquide|Messer|...", "initials": "2-letter", "role": "the new title, e.g. 'Regional President, Middle East & Africa'", "region": "MENA|Europe|ASEAN|Americas", "desc": "who was appointed and why it matters", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD" } ],
     "projectHighlights": [ { "title": "...", "location": "...", "progress": 0-100, "tone": "..." } ],
-    "opportunityRadar": [ { "code": "2-letter country code", "country": "...", "sector": "...", "tier": "High|Moderate", "potential": "..." } ]
+    "opportunityRadar": [ { "code": "2-letter country code", "country": "...", "sector": "...", "tier": "High|Moderate", "potential": "...", "basis": "why this tier: the demand signal and competitor gap you found", "sources": [ { "title": "...", "url": "https://exact-article-url-from-search" } ] } ]
   },
   "geopolitical": {
     "hotZone": { "name": "...", "coords": "...", "lat": 0.0, "lng": 0.0, "detail": "..." },
@@ -34,6 +35,10 @@ Once your research is complete, respond with a single JSON object (no markdown, 
     "articles": [ { "tag": "WARNING|MONITOR", "region": "...", "time": "...", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD" } ]
   }
 }
+
+IMPORTANT: judgements carry their reasoning. For each KPI and each opportunityRadar entry, "basis" is 1–2 sentences naming the concrete evidence behind it, and "sources" lists the 1–2 articles it comes from (same URL rules as sourceUrl). Opportunity radar tiers use this scale:
+${methodologyForPrompt()}
+If you found no evidence for a judgement, say so plainly in "basis" instead of inventing a reason.
 
 IMPORTANT: "sourceUrl" must be the exact, real URL of the specific article you found via web_search — not the outlet's homepage, and not a fabricated URL. Every sourceUrl must come directly from a search result you actually retrieved.
 

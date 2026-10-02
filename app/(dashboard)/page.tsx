@@ -9,6 +9,8 @@ import CountryBadge from "@/components/country-badge";
 import CompetitorHeatmap from "@/components/competitor-heatmap";
 import KpiBand from "@/components/kpi-band";
 import Panel from "@/components/panel";
+import InsightPopover from "@/components/insight-popover";
+import { RADAR_TIER } from "@/lib/methodology";
 
 const OPPORTUNITY_BAR: Record<string, string> = {
   HIGH: "bg-accent",
@@ -189,9 +191,18 @@ export default async function OverviewPage({
                   <span className="font-semibold text-ink">{entry.country}</span>
                   <span className="text-[12px] text-ink-muted line-clamp-2">{entry.sector}</span>
                 </div>
-                <span className={`font-mono text-[11px] font-semibold uppercase ${entry.tier === "High" ? "text-accent" : "text-ink-muted"}`}>
+                <InsightPopover
+                  insight={{
+                    heading: `${entry.country} · ${entry.sector}: ${entry.tier}`,
+                    definition: RADAR_TIER[entry.tier],
+                    basis: entry.basis,
+                    sources: entry.sources,
+                  }}
+                  label={`Why ${entry.country} is rated ${entry.tier}`}
+                  className={`font-mono text-[11px] font-semibold uppercase rounded px-1 underline decoration-dotted underline-offset-2 ${entry.tier === "High" ? "text-accent" : "text-ink-muted"}`}
+                >
                   {entry.tier}
-                </span>
+                </InsightPopover>
               </div>
             ))}
           </div>

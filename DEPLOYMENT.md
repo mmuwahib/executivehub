@@ -30,7 +30,8 @@ The App Service needs to know the Function App's URL, so create this one first.
   classic plan rejects.
 - It will ask you to create a **Storage Account** alongside it — required,
   this is where `writeJsonBlob`/`getDispatch` read and write
-  `current-daily.json` / `current-weekly.json` / `markets-latest.json`.
+  `current-daily.json` / `current-weekly.json` / `current-tech.json` /
+  `markets-latest.json`.
 
 ```bash
 az functionapp create \
@@ -147,10 +148,23 @@ Every daily/weekly refresh is checked before it is published
 - **Known limit**: sites that block automated requests (403/timeouts, e.g.
   gasworld.com) can't be link-checked, so those links are kept if they pass
   the host/format checks. Spot-check them after the first live run.
+- **Refresh schedule** (UTC): `dailyRefresh` 03:00 every day (dashboard
+  news, KPIs, opportunity radar); `weeklyRefresh` Sundays 03:00 (competitor
+  heatmap, growth opportunities, white space, project tracker);
+  `techRefresh` Sundays 04:00 (Tech & Innovation articles). The weekly work
+  is split in two so each run stays well inside the 30-minute function limit
+  and a slow tech search can't block the industry analysis.
+- **Why and how**: every rating, score, tier and KPI carries a `basis` (the
+  evidence) and `sources` (articles), applying the scale in
+  `api/src/methodology.ts` (mirrored in `lib/methodology.ts` for the UI).
+  Sources get the same link checks as articles; bad ones are removed, the
+  rating is kept, and a missing basis is logged rather than invented. The
+  dashboard shows this on hover or tap.
 - **Rolling back**: every successful run also writes a dated copy
-  (`daily/YYYY-MM-DD.json`, `weekly/YYYY-Www.json`) in the `dispatch`
-  container. To roll back, copy a dated blob over `current-daily.json` /
-  `current-weekly.json` in the Azure Portal.
+  (`daily/YYYY-MM-DD.json`, `weekly/YYYY-Www.json`, `tech/YYYY-Www.json`) in
+  the `dispatch` container. To roll back, copy a dated blob over
+  `current-daily.json` / `current-weekly.json` / `current-tech.json` in the
+  Azure Portal.
 - **Freshness**: the topbar badge shows Live, then Stale once the last good
   daily refresh is over 36 hours old. `generated_at` is stamped by the
   function, not taken from Claude.
