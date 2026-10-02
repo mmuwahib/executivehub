@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { writeJsonBlob } from "../blobStorage";
-import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh, ResearchError, parseJsonAnswer } from "../claude";
 import { WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { methodologyForPrompt } from "../methodology";
@@ -53,7 +53,7 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
 
   let text: string;
   try {
-    const research = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 8);
+    const research = await researchJson(apiKey, WEEKLY_INTELLIGENCE_PROMPT, 8, (m) => context.log(`weeklyRefresh: ${m}`));
     text = research.text;
     context.log(`weeklyRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
@@ -64,9 +64,17 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = parseJsonAnswer(text);
   } catch (err) {
     context.error("Claude's final response was not valid JSON:", text.slice(0, 500), err);
+    // Keep the paid answer so it can be inspected or recovered by hand.
+    const failedPath = `failed/weeklyRefresh-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    try {
+      await writeJsonBlob(failedPath, { error: String(err), raw: text });
+      context.warn(`weeklyRefresh: raw answer saved to ${failedPath}`);
+    } catch (saveErr) {
+      context.warn("weeklyRefresh: could not save the raw answer.", saveErr);
+    }
     return;
   }
 

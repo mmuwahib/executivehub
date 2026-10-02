@@ -1,6 +1,6 @@
 import { app, InvocationContext, Timer } from "@azure/functions";
 import { readJsonBlob, writeJsonBlob } from "../blobStorage";
-import { researchJson, formatUsage, skipLocalRefresh, ResearchError } from "../claude";
+import { researchJson, formatUsage, skipLocalRefresh, ResearchError, parseJsonAnswer } from "../claude";
 import { TechData, WeeklyData } from "../types";
 import { allowedDomainsForPrompt } from "../outlets";
 import { validateTech, TECH_TOPICS, MAX_PER_OUTLET } from "../validation";
@@ -43,7 +43,7 @@ export async function techRefresh(myTimer: Timer, context: InvocationContext): P
 
   let text: string;
   try {
-    const research = await researchJson(apiKey, TECH_PROMPT, 6);
+    const research = await researchJson(apiKey, TECH_PROMPT, 6, (m) => context.log(`techRefresh: ${m}`));
     text = research.text;
     context.log(`techRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
@@ -54,9 +54,17 @@ export async function techRefresh(myTimer: Timer, context: InvocationContext): P
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = parseJsonAnswer(text);
   } catch (err) {
     context.error("Claude's final response was not valid JSON:", text.slice(0, 500), err);
+    // Keep the paid answer so it can be inspected or recovered by hand.
+    const failedPath = `failed/techRefresh-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    try {
+      await writeJsonBlob(failedPath, { error: String(err), raw: text });
+      context.warn(`techRefresh: raw answer saved to ${failedPath}`);
+    } catch (saveErr) {
+      context.warn("techRefresh: could not save the raw answer.", saveErr);
+    }
     return;
   }
 

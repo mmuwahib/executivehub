@@ -41,6 +41,16 @@ export function skipLocalRefresh(): boolean {
   return !inAzure && process.env.ALLOW_LOCAL_REFRESH !== "true";
 }
 
+// The model sometimes wraps its answer in a ```json fence or adds a line of
+// text despite the prompt. Parse the outermost {...} block so a paid run isn't
+// lost to formatting; throws if there is no parseable object.
+export function parseJsonAnswer(text: string): unknown {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  const candidate = start >= 0 && end > start ? text.slice(start, end + 1) : text;
+  return JSON.parse(candidate);
+}
+
 export function formatUsage(u: ResearchUsage): string {
   return (
     `${u.requests} API call(s), ${u.inputTokens} input + ${u.outputTokens} output tokens, ` +
@@ -54,10 +64,21 @@ export function formatUsage(u: ResearchUsage): string {
 // assistant turn back, so this loops (bounded) instead of treating it as a
 // failure. Throws on API errors, truncation, or an empty answer so callers
 // keep the previous published data.
-export async function researchJson(apiKey: string, prompt: string, maxSearches: number): Promise<ResearchResult> {
-  // A research run with web search took 14–15 minutes in testing. The
-  // Function App's own limit is functionTimeout in host.json (30 min).
-  const anthropic = new Anthropic({ apiKey, timeout: 25 * 60 * 1000 });
+// Our own limits, inside the Function App's 30-minute functionTimeout so a
+// run can still report what it spent instead of being killed silently.
+const RUN_BUDGET_MS = 25 * 60 * 1000;
+const STALL_MS = 5 * 60 * 1000;
+const PROGRESS_EVERY_MS = 2 * 60 * 1000;
+
+export async function researchJson(
+  apiKey: string,
+  prompt: string,
+  maxSearches: number,
+  log: (message: string) => void = () => {}
+): Promise<ResearchResult> {
+  const anthropic = new Anthropic({ apiKey, timeout: RUN_BUDGET_MS });
+  const startedAt = Date.now();
+  const seconds = () => Math.round((Date.now() - startedAt) / 1000);
   // Without today's date, "this week" / "last 7 days" have no anchor and the
   // model returned articles 3–22 months old in testing.
   const today = new Date().toISOString().slice(0, 10);
@@ -68,17 +89,49 @@ export async function researchJson(apiKey: string, prompt: string, maxSearches: 
   const usage: ResearchUsage = { inputTokens: 0, outputTokens: 0, searches: 0, requests: 0, estimatedUsd: 0 };
 
   for (let turn = 0; turn <= MAX_CONTINUATIONS; turn++) {
+    if (Date.now() - startedAt > RUN_BUDGET_MS) {
+      throw new ResearchError(`ran past the ${RUN_BUDGET_MS / 60000}-minute budget before turn ${turn + 1}`, usage);
+    }
+
     // Streamed, not a single blocking request: a research run can take 15+
     // minutes and a silent long-lived connection gets dropped ("Request timed
     // out" at ~15 min in testing). finalMessage() still returns one Message.
-    const message = await anthropic.messages
-      .stream({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        tools: [{ type: "web_search_20260209", name: "web_search", max_uses: maxSearches }],
-        messages,
-      })
-      .finalMessage();
+    const stream = anthropic.messages.stream({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: maxSearches }],
+      messages,
+    });
+
+    // Watchdog: progress log, stall detection, overall budget.
+    let events = 0;
+    let lastEventAt = Date.now();
+    let abortReason: string | null = null;
+    let lastProgressAt = Date.now();
+    stream.on("streamEvent", () => {
+      events += 1;
+      lastEventAt = Date.now();
+    });
+    const watchdog = setInterval(() => {
+      const now = Date.now();
+      if (now - lastProgressAt >= PROGRESS_EVERY_MS) {
+        lastProgressAt = now;
+        log(`turn ${turn + 1}: still streaming at ${seconds()}s, ${events} events, last event ${Math.round((now - lastEventAt) / 1000)}s ago`);
+      }
+      if (now - lastEventAt > STALL_MS) abortReason = `stream stalled: no events for ${STALL_MS / 60000} minutes`;
+      else if (now - startedAt > RUN_BUDGET_MS) abortReason = `ran past the ${RUN_BUDGET_MS / 60000}-minute budget`;
+      if (abortReason) stream.abort();
+    }, 15_000);
+
+    let message: Anthropic.Message;
+    try {
+      message = await stream.finalMessage();
+    } catch (err) {
+      if (abortReason) throw new ResearchError(`${abortReason} (turn ${turn + 1}, ${seconds()}s)`, usage);
+      throw err;
+    } finally {
+      clearInterval(watchdog);
+    }
 
     usage.requests += 1;
     usage.inputTokens += message.usage.input_tokens;
@@ -88,6 +141,11 @@ export async function researchJson(apiKey: string, prompt: string, maxSearches: 
       (usage.inputTokens / 1e6) * USD_PER_MTOK_INPUT +
       (usage.outputTokens / 1e6) * USD_PER_MTOK_OUTPUT +
       usage.searches * USD_PER_SEARCH;
+    log(
+      `turn ${turn + 1}: ${message.stop_reason} at ${seconds()}s, ` +
+        `${message.usage.input_tokens} in / ${message.usage.output_tokens} out, ` +
+        `${message.usage.server_tool_use?.web_search_requests ?? 0} searches`
+    );
 
     if (message.stop_reason === "pause_turn") {
       messages.push({ role: "assistant", content: message.content });
