@@ -2,8 +2,10 @@ import { LeadershipAppointment } from "@/lib/types";
 import { TONE_CHIP } from "@/lib/tone";
 import { companyTone } from "@/lib/company";
 import { safeUrl } from "@/lib/safe-url";
+import { provenanceOf } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 
-export default function LeadershipCard({ appointment }: { appointment: LeadershipAppointment }) {
+export default function LeadershipCard({ appointment, live }: { appointment: LeadershipAppointment; live: boolean }) {
   const tone = companyTone(appointment.company);
 
   return (
@@ -26,7 +28,10 @@ export default function LeadershipCard({ appointment }: { appointment: Leadershi
           {appointment.company} · {appointment.region}
         </p>
         <p className="text-[13px] text-ink-muted leading-relaxed">{appointment.desc}</p>
-        <p className="text-[12px] text-ink-faint">{appointment.source}</p>
+        <p className="flex items-center gap-3 text-[12px] text-ink-faint">
+          <ProvenanceTag value={provenanceOf(appointment, live)} />
+          {appointment.source}
+        </p>
       </div>
     </a>
   );

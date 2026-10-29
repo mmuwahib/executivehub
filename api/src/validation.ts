@@ -301,6 +301,7 @@ export async function validateDaily(raw: unknown, opts: ValidationOptions = {}):
       ...dashboard,
       kpis: explainList(dashboard.kpis, "dashboard.kpis", drops),
       opportunityRadar: explainList(dashboard.opportunityRadar, "dashboard.opportunityRadar", drops),
+      projectHighlights: explainList(dashboard.projectHighlights, "dashboard.projectHighlights", drops),
       geoPulse,
       industryWeekly,
       leadershipMoves,
@@ -339,6 +340,7 @@ export async function validateWeekly(raw: unknown): Promise<Validated<WeeklyData
     projectTracker: {
       ...projectTracker,
       kpis: explainList(projectTracker.kpis, "projectTracker.kpis", drops),
+      projects: explainList(projectTracker.projects, "projectTracker.projects", drops),
     },
   } as unknown as WeeklyData;
 

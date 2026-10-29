@@ -1,6 +1,8 @@
 import { CompetitorCell, CompetitorRow } from "@/lib/types";
 import { COMPETITOR_STRENGTH, GC_OPENING } from "@/lib/methodology";
 import InsightPopover from "@/components/insight-popover";
+import ProvenanceTag from "@/components/provenance-tag";
+import { Provenance, PROVENANCE_LABEL, provenanceOf } from "@/lib/provenance";
 
 // Competitor strength by country as a heatmap: one amber scale for rivals
 // (darker = stronger), the brand blue for Gulf Cryo's own opening. Every cell
@@ -28,15 +30,38 @@ const COMPETITORS: { key: "linde" | "airProducts" | "airLiquide" | "messer"; lab
 const CELL_BASE =
   "h-11 w-full rounded-md flex items-center justify-between gap-2 px-3 text-[13px] transition hover:ring-2 hover:ring-accent/60";
 
-function Cell({ cell, heading, definition, classes }: { cell: CompetitorCell; heading: string; definition?: string; classes: string }) {
+// Corner marker: filled green = sourced, hollow = estimate, none = sample.
+function Marker({ value }: { value: Provenance }) {
+  if (value === "sample") return null;
+  return value === "sourced" ? (
+    <span className="w-2 h-2 rounded-full bg-positive ring-2 ring-surface shrink-0" aria-hidden="true" />
+  ) : (
+    <span className="w-2 h-2 rounded-full border-2 border-current opacity-70 shrink-0" aria-hidden="true" />
+  );
+}
+
+function Cell({
+  cell,
+  heading,
+  definition,
+  classes,
+  live,
+}: {
+  cell: CompetitorCell;
+  heading: string;
+  definition?: string;
+  classes: string;
+  live: boolean;
+}) {
+  const provenance = provenanceOf(cell, live);
   return (
     <InsightPopover
-      insight={{ heading, definition, basis: cell.basis, sources: cell.sources }}
-      label={`${heading}. Show why.`}
+      insight={{ heading, definition, basis: cell.basis, sources: cell.sources, provenance }}
+      label={`${heading} (${PROVENANCE_LABEL[provenance]}). Show why.`}
       className={`${CELL_BASE} ${classes}`}
     >
       <span>{cell.value}</span>
-      {cell.basis && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50" aria-hidden="true" />}
+      <Marker value={provenance} />
     </InsightPopover>
   );
 }
@@ -51,9 +76,19 @@ function readOut(rows: CompetitorRow[]): string | null {
   return parts.length ? parts.join(" ") : null;
 }
 
-export default function CompetitorHeatmap({ rows, showReadOut = true }: { rows: CompetitorRow[]; showReadOut?: boolean }) {
+export default function CompetitorHeatmap({
+  rows,
+  live,
+  showReadOut = true,
+}: {
+  rows: CompetitorRow[];
+  live: boolean;
+  showReadOut?: boolean;
+}) {
   const summary = showReadOut ? readOut(rows) : null;
   const explained = rows.some((r) => r.gcOpportunity.basis || COMPETITORS.some((c) => r[c.key].basis));
+  const allCells = rows.flatMap((r) => [...COMPETITORS.map((c) => r[c.key]), r.gcOpportunity]);
+  const sourcedCount = allCells.filter((c) => provenanceOf(c, live) === "sourced").length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -70,8 +105,24 @@ export default function CompetitorHeatmap({ rows, showReadOut = true }: { rows: 
             </InsightPopover>
           ))}
         </div>
-        <span className="text-[12px] text-ink-faint">
-          {explained ? "Hover or tap a cell to see why it was rated that way" : "Hover or tap a cell to see what the rating means"}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-faint">
+          {live ? (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-positive" aria-hidden="true" />
+                {sourcedCount} of {allCells.length} sourced
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full border-2 border-warning" aria-hidden="true" />
+                {allCells.length - sourcedCount} estimates
+              </span>
+            </>
+          ) : (
+            <ProvenanceTag value="sample" />
+          )}
+          <span>
+            {explained ? "Hover or tap a cell to see why it was rated that way" : "Hover or tap a cell to see what the rating means"}
+          </span>
         </span>
       </div>
 
@@ -95,6 +146,7 @@ export default function CompetitorHeatmap({ rows, showReadOut = true }: { rows: 
                   heading={`${c.label} in ${row.country}: ${row[c.key].value}`}
                   definition={COMPETITOR_STRENGTH[row[c.key].value]}
                   classes={STRENGTH_CELL[row[c.key].value] ?? "bg-panel-high text-ink-muted"}
+                  live={live}
                 />
               ))}
               <Cell
@@ -102,6 +154,7 @@ export default function CompetitorHeatmap({ rows, showReadOut = true }: { rows: 
                 heading={`Gulf Cryo opening in ${row.country}: ${row.gcOpportunity.value}`}
                 definition={GC_OPENING[row.gcOpportunity.value]}
                 classes={OPENING_CELL[row.gcOpportunity.value] ?? "bg-panel-high text-ink-muted"}
+                live={live}
               />
             </div>
           ))}

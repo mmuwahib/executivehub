@@ -2,6 +2,8 @@ import { SourceRef, Tone } from "@/lib/types";
 import { TONE_TEXT } from "@/lib/tone";
 import { KPI_NOTE } from "@/lib/methodology";
 import InsightPopover from "@/components/insight-popover";
+import ProvenanceTag from "@/components/provenance-tag";
+import { provenanceOf } from "@/lib/provenance";
 
 export interface KpiBandItem {
   label: string;
@@ -22,7 +24,7 @@ const COLS: Record<number, string> = {
 
 // One bordered strip of headline figures, cells split by hairlines (B+ design).
 // Each figure has an info button explaining what it rests on.
-export default function KpiBand({ items }: { items: KpiBandItem[] }) {
+export default function KpiBand({ items, live }: { items: KpiBandItem[]; live: boolean }) {
   return (
     <section
       aria-label="Key figures"
@@ -36,7 +38,7 @@ export default function KpiBand({ items }: { items: KpiBandItem[] }) {
           <div className="flex items-center justify-between gap-2">
             <span className="eyebrow">{kpi.label}</span>
             <InsightPopover
-              insight={{ heading: `${kpi.label}: ${kpi.value}${kpi.suffix ? ` ${kpi.suffix}` : ""}`, definition: KPI_NOTE, basis: kpi.basis, sources: kpi.sources }}
+              insight={{ heading: `${kpi.label}: ${kpi.value}${kpi.suffix ? ` ${kpi.suffix}` : ""}`, definition: KPI_NOTE, basis: kpi.basis, sources: kpi.sources, provenance: provenanceOf(kpi, live) }}
               label={`How ${kpi.label} is worked out`}
               className="w-6 h-6 rounded-full border border-border-strong text-[11px] font-semibold text-ink-faint flex items-center justify-center hover:text-accent hover:border-accent"
             >
@@ -50,6 +52,7 @@ export default function KpiBand({ items }: { items: KpiBandItem[] }) {
           <span className={`text-[13px] font-semibold ${kpi.tone === "neutral" ? "text-ink-muted" : TONE_TEXT[kpi.tone]}`}>
             {kpi.delta}
           </span>
+          <ProvenanceTag value={provenanceOf(kpi, live)} className="mt-1" />
         </div>
       ))}
     </section>

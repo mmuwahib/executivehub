@@ -1,5 +1,6 @@
 import { atcData } from "@/lib/atc-data";
 import Panel from "@/components/panel";
+import ProvenanceTag from "@/components/provenance-tag";
 
 const FOCUS_ACCENT = ["text-positive", "text-warning"];
 
@@ -10,7 +11,10 @@ export default function AtcProgramPage() {
     <div className="flex flex-col gap-7">
       <section className="rounded-xl border border-accent/40 bg-panel-high p-7 md:p-9 grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
         <div className="lg:col-span-3 flex flex-col gap-3">
-          <span className="eyebrow text-accent">{overview.subtitle}</span>
+          <span className="flex flex-wrap items-center gap-3">
+            <span className="eyebrow text-accent">{overview.subtitle}</span>
+            <ProvenanceTag value="sourced" />
+          </span>
           <h1 className="m-0 text-[34px] font-extrabold leading-tight tracking-tight text-ink">{overview.title}</h1>
           <p className="m-0 text-base text-ink-muted max-w-[62ch]">{overview.description}</p>
         </div>
@@ -103,6 +107,7 @@ export default function AtcProgramPage() {
 
           <Panel>
             <span className="eyebrow">Sources</span>
+            <p className="m-0 -mt-3 text-[12px] text-ink-faint">Every fact and quote on this page was researched from these articles. It is not updated by the automatic refresh.</p>
             <div className="flex flex-col gap-2.5 -mt-2">
               {sources.map((source) => (
                 <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="text-sm">

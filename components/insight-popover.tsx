@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { safeUrl } from "@/lib/safe-url";
 import { SourceRef } from "@/lib/types";
+import { Provenance } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 
 export interface Insight {
   heading: string;
   definition?: string;
   basis?: string;
   sources?: SourceRef[];
+  provenance?: Provenance;
 }
 
 const PANEL_WIDTH = 320;
@@ -134,14 +137,19 @@ export default function InsightPopover({
             transform: pos.above ? "translateY(-100%)" : undefined,
           }}
         >
-          <p className="m-0 text-sm font-semibold text-ink">{insight.heading}</p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="m-0 text-sm font-semibold text-ink">{insight.heading}</p>
+            {insight.provenance && <ProvenanceTag value={insight.provenance} className="mt-0.5" />}
+          </div>
           {insight.definition && <p className="mt-1 mb-0 text-[12px] leading-snug text-ink-faint">{insight.definition}</p>}
           <div className="mt-3 flex flex-col gap-1">
             <span className="eyebrow">Why</span>
             {insight.basis ? (
               <p className="m-0 text-[13px] leading-relaxed text-ink-muted">{insight.basis}</p>
+            ) : insight.provenance === "sample" ? (
+              <p className="m-0 text-[12px] text-warning">Sample data: no sourced reasoning yet. It appears after the next refresh.</p>
             ) : (
-              <p className="m-0 text-[12px] text-warning">No sourced reasoning yet. It appears after the next refresh.</p>
+              <p className="m-0 text-[12px] text-warning">No reasoning was recorded for this in the latest refresh.</p>
             )}
           </div>
           {insight.sources && insight.sources.length > 0 && (

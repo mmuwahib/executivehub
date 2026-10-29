@@ -24,7 +24,7 @@ Once your research is complete, respond with a single JSON object (no markdown, 
     "geoPulse": [ { "tag": "WARNING|MONITOR", "title": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "time": "..." } ],
     "industryWeekly": [ { "tag": "...", "tone": "accent|cyan|warning|danger|neutral", "title": "...", "desc": "...", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD", "region": "MENA|Europe|ASEAN|Americas" } ],
     "leadershipMoves": [ { "company": "Linde|Air Products|Air Liquide|Messer|...", "initials": "2-letter", "role": "the new title, e.g. 'Regional President, Middle East & Africa'", "region": "MENA|Europe|ASEAN|Americas", "desc": "who was appointed and why it matters", "source": "...", "sourceUrl": "https://exact-article-url-from-search", "publishedAt": "YYYY-MM-DD" } ],
-    "projectHighlights": [ { "title": "...", "location": "...", "progress": 0-100, "tone": "..." } ],
+    "projectHighlights": [ { "title": "...", "location": "...", "progress": 0-100, "tone": "...", "basis": "what the progress figure rests on", "sources": [ { "title": "...", "url": "https://exact-article-url-from-search" } ] } ],
     "opportunityRadar": [ { "code": "2-letter country code", "country": "...", "sector": "...", "tier": "High|Moderate", "potential": "...", "basis": "why this tier: the demand signal and competitor gap you found", "sources": [ { "title": "...", "url": "https://exact-article-url-from-search" } ] } ]
   },
   "geopolitical": {
@@ -36,7 +36,7 @@ Once your research is complete, respond with a single JSON object (no markdown, 
   }
 }
 
-IMPORTANT: judgements carry their reasoning. For each KPI and each opportunityRadar entry, "basis" is 1–2 sentences naming the concrete evidence behind it, and "sources" lists the 1–2 articles it comes from (same URL rules as sourceUrl). Opportunity radar tiers use this scale:
+IMPORTANT: judgements carry their reasoning. For each KPI, each opportunityRadar entry and each projectHighlights entry, "basis" is 1–2 sentences naming the concrete evidence behind it, and "sources" lists the 1–2 articles it comes from (same URL rules as sourceUrl). Opportunity radar tiers use this scale:
 ${methodologyForPrompt()}
 If you found no evidence for a judgement, say so plainly in "basis" instead of inventing a reason.
 

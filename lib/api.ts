@@ -123,6 +123,27 @@ export async function getIntelFeed(): Promise<{ live: boolean; items: LiveIntelI
   return items.length ? { live: true, items } : { live: false, items: FOOTER_TICKER };
 }
 
+// Which sections are showing published refresh data (true) versus the sample
+// fallback (false). Pages use this with lib/provenance.ts to label figures.
+export interface DataSources {
+  dashboard: boolean;
+  industry: boolean;
+  projects: boolean;
+  tech: boolean;
+  markets: boolean;
+}
+
+export async function getDataSources(): Promise<DataSources> {
+  const bundle = await fetchDispatch();
+  return {
+    dashboard: Boolean(bundle?.dashboard),
+    industry: Boolean(bundle?.industrySummary),
+    projects: Boolean(bundle?.projectTracker),
+    tech: Boolean(bundle?.techArticles),
+    markets: Boolean(bundle?.ticker?.length || bundle?.dashboard?.marketSeries?.length),
+  };
+}
+
 // Whether the current page is showing real, Claude-researched dispatch data
 // or the static lib/mock-data.ts fallback — surfaced in the header so a
 // viewer isn't silently shown mock content with no indication either way.

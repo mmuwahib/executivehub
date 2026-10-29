@@ -1,4 +1,6 @@
-import { getIndustrySummaryData } from "@/lib/api";
+import { getIndustrySummaryData, getDataSources } from "@/lib/api";
+import { provenanceOf } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 import PrintButton from "@/components/print-button";
 import CompetitorHeatmap from "@/components/competitor-heatmap";
 import PageHeader from "@/components/page-header";
@@ -24,7 +26,8 @@ export default async function IndustrySummaryPage({
   searchParams: Promise<{ q?: string; opportunity?: string }>;
 }) {
   const { q, opportunity } = await searchParams;
-  const { competitors, opportunities, whiteSpace } = await getIndustrySummaryData();
+  const [{ competitors, opportunities, whiteSpace }, sources] = await Promise.all([getIndustrySummaryData(), getDataSources()]);
+  const live = sources.industry;
 
   const needle = q?.toLowerCase();
   const filteredCompetitors = competitors.filter((row) => {
@@ -68,7 +71,7 @@ export default async function IndustrySummaryPage({
         {filteredCompetitors.length === 0 ? (
           <p className="text-sm text-ink-muted">No countries match{q ? ` "${q}"` : " this filter"}.</p>
         ) : (
-          <CompetitorHeatmap rows={filteredCompetitors} />
+          <CompetitorHeatmap rows={filteredCompetitors} live={live} />
         )}
       </Panel>
 
@@ -94,6 +97,7 @@ export default async function IndustrySummaryPage({
                       definition: OPPORTUNITY_SCORE,
                       basis: opp.basis,
                       sources: opp.sources,
+                      provenance: provenanceOf(opp, live),
                     }}
                     label={`How the ${opp.country} score of ${opp.score} was reached`}
                     className="flex flex-col items-end rounded-md px-1.5 py-1 hover:bg-panel-high"
@@ -102,6 +106,7 @@ export default async function IndustrySummaryPage({
                     <span className="eyebrow text-[10px] underline decoration-dotted underline-offset-2">Score · why</span>
                   </InsightPopover>
                 </div>
+                <ProvenanceTag value={provenanceOf(opp, live)} className="-mt-2" />
                 <p className="m-0 text-sm text-ink-muted">{opp.summary}</p>
                 <div className="rounded-lg bg-panel-high p-3 flex flex-col gap-1">
                   <span className={`eyebrow font-semibold ${immediate ? "text-warning" : "text-accent"}`}>
@@ -136,6 +141,7 @@ export default async function IndustrySummaryPage({
                   definition: WHITE_SPACE_TIER[sector.tier],
                   basis: sector.basis,
                   sources: sector.sources,
+                  provenance: provenanceOf(sector, live),
                 }}
                 label={`Why ${sector.title} is rated ${sector.tier}`}
                 className={`self-start font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md underline decoration-dotted underline-offset-2 ${TIER_CHIP[sector.tone]}`}
@@ -145,6 +151,7 @@ export default async function IndustrySummaryPage({
               <span className="text-[17px] font-bold text-ink">{sector.title}</span>
               <span className="text-sm text-ink-muted">{sector.desc}</span>
               <span className="mt-auto pt-2.5 border-t border-border text-[13px] text-accent">GC angle: {sector.angle}</span>
+              <ProvenanceTag value={provenanceOf(sector, live)} />
             </article>
           ))}
         </div>

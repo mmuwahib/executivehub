@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { getProjectTrackerData } from "@/lib/api";
+import { getProjectTrackerData, getDataSources } from "@/lib/api";
+import { provenanceOf, sectionProvenance } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 import { COUNTRIES } from "@/lib/nav";
+import { safeUrl } from "@/lib/safe-url";
 import { Direction, ProjectCategory, Tone } from "@/lib/types";
 import PageHeader from "@/components/page-header";
 import FilterChips from "@/components/filter-chips";
@@ -58,7 +61,8 @@ export default async function ProjectTrackerPage({
   searchParams: Promise<{ q?: string; category?: string; country?: string }>;
 }) {
   const { q, category, country } = await searchParams;
-  const { kpis, projects, territories } = await getProjectTrackerData();
+  const [{ kpis, projects, territories }, sources] = await Promise.all([getProjectTrackerData(), getDataSources()]);
+  const live = sources.projects;
 
   const needle = q?.toLowerCase();
   const filteredProjects = projects.filter((project) => {
@@ -102,7 +106,7 @@ export default async function ProjectTrackerPage({
         ]}
       />
 
-      <KpiBand items={kpis} />
+      <KpiBand items={kpis} live={live} />
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {filteredProjects.length === 0 && (
@@ -146,11 +150,19 @@ export default async function ProjectTrackerPage({
             <p className="m-0 text-sm text-ink-muted">
               <span className="text-ink-faint">Latest:</span> {project.quote}
             </p>
+            <div className="flex flex-wrap items-center gap-3 text-[12px]">
+              <ProvenanceTag value={provenanceOf(project, live)} />
+              {project.sources?.map((s) => (
+                <a key={s.url} href={safeUrl(s.url)} target="_blank" rel="noopener noreferrer">
+                  {s.title} ↗
+                </a>
+              ))}
+            </div>
           </article>
         ))}
       </section>
 
-      <Panel title="Territories">
+      <Panel title="Territories" aside={<ProvenanceTag value={sectionProvenance(live)} />}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm border-collapse">
             <thead>

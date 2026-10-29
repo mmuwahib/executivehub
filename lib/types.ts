@@ -77,7 +77,7 @@ export interface MarketSeries {
   bars: number[];
 }
 
-export interface ProjectHighlight {
+export interface ProjectHighlight extends Explained {
   title: string;
   location: string;
   progress: number;
@@ -211,7 +211,7 @@ export interface TrackerKpi extends Explained {
 
 export type ProjectCategory = "construction" | "renewable" | "sustainability";
 
-export interface ProjectCard {
+export interface ProjectCard extends Explained {
   title: string;
   location: string;
   status: string;

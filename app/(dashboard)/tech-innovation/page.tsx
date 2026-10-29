@@ -1,4 +1,6 @@
-import { getTechArticles } from "@/lib/api";
+import { getTechArticles, getDataSources } from "@/lib/api";
+import { provenanceOf } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 import { safeUrl } from "@/lib/safe-url";
 import { Region, TechArticle } from "@/lib/types";
 import PrintButton from "@/components/print-button";
@@ -22,13 +24,14 @@ const TAG_BAR: Record<string, string> = {
   Innovation: "bg-accent",
 };
 
-function Meta({ article }: { article: TechArticle }) {
+function Meta({ article, live }: { article: TechArticle; live: boolean }) {
   return (
     <span className="eyebrow flex flex-wrap gap-x-2">
       <span className={`font-semibold ${TAG_TEXT[article.tag] ?? "text-ink-muted"}`}>{article.tag}</span>
       <span>
         · {article.region} · {article.time}
       </span>
+      <ProvenanceTag value={provenanceOf(article, live)} />
     </span>
   );
 }
@@ -39,7 +42,8 @@ export default async function TechInnovationPage({
   searchParams: Promise<{ q?: string; tag?: string; region?: string }>;
 }) {
   const { q, tag, region } = await searchParams;
-  const allArticles = await getTechArticles();
+  const [allArticles, sources] = await Promise.all([getTechArticles(), getDataSources()]);
+  const live = sources.tech;
 
   const needle = q?.toLowerCase();
   const articles = allArticles.filter((article) => {
@@ -115,7 +119,7 @@ export default async function TechInnovationPage({
             rel="noopener noreferrer"
             className={`glass-card rounded-xl p-7 flex flex-col gap-3.5 group border-accent/40 ${side.length ? "lg:col-span-7" : "lg:col-span-12"}`}
           >
-            <Meta article={featured} />
+            <Meta article={featured} live={live} />
             <span className="text-[26px] font-bold leading-tight tracking-tight text-ink group-hover:text-accent">{featured.title}</span>
             <span className="text-[15px] text-ink-muted">{featured.desc}</span>
             <span className="mt-auto text-[13px] font-semibold text-accent">{featured.source} · Read article →</span>
@@ -130,7 +134,7 @@ export default async function TechInnovationPage({
                   rel="noopener noreferrer"
                   className="glass-card rounded-xl p-5 flex flex-col gap-2 flex-1 group"
                 >
-                  <Meta article={article} />
+                  <Meta article={article} live={live} />
                   <span className="text-[17px] font-bold leading-snug text-ink group-hover:text-accent">{article.title}</span>
                   <span className="mt-auto text-[13px] text-ink-faint">{article.source}</span>
                 </a>
@@ -150,7 +154,7 @@ export default async function TechInnovationPage({
               rel="noopener noreferrer"
               className="glass-card rounded-xl p-5 flex flex-col gap-2 group"
             >
-              <Meta article={article} />
+              <Meta article={article} live={live} />
               <span className="text-base font-bold leading-snug text-ink group-hover:text-accent">{article.title}</span>
               <span className="text-[13px] text-ink-muted line-clamp-3">{article.desc}</span>
               <span className="mt-auto text-[12px] text-ink-faint">{article.source}</span>

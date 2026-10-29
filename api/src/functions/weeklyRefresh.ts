@@ -27,11 +27,13 @@ Once your research is complete, respond with a single JSON object (no markdown, 
     "whiteSpace": [ { "icon": "material-symbol-name", "tier": "HIGH|MEDIUM|EMERGING", "tone": "accent|warning|cyan", "title": "...", "desc": "...", "angle": "...", "basis": "...", "sources": [...] } ]
   },
   "projectTracker": {
-    "kpis": [ { "label": "ACTIVE PROJECTS", "value": "...", "delta": "...", "icon": "groups", "tone": "neutral", "basis": "what the figure counts and where it comes from" }, { "label": "PROJECTED DEMAND", "value": "...", "suffix": "BCM/Y", "delta": "...", "icon": "database", "tone": "neutral", "basis": "..." }, { "label": "SUSTAINABILITY INDEX", "value": "...", "delta": "...", "icon": "eco", "tone": "accent", "basis": "..." }, { "label": "SYSTEM ALERTS", "value": "...", "delta": "...", "icon": "warning", "tone": "danger", "basis": "..." } ],
-    "projects": [ { "title": "...", "location": "...", "status": "...", "statusTone": "accent|warning|cyan|danger", "gasDemand": "...", "innovation": "...", "quote": "...", "atcConnection": true|false, "icon": "material-symbol-name", "category": "construction|renewable|sustainability" } ],
+    "kpis": [ { "label": "ACTIVE PROJECTS", "value": "...", "delta": "...", "icon": "groups", "tone": "neutral", "basis": "what the figure counts and where it comes from", "sources": [...] }, { "label": "PROJECTED DEMAND", "value": "...", "suffix": "BCM/Y", "delta": "...", "icon": "database", "tone": "neutral", "basis": "..." }, { "label": "SUSTAINABILITY INDEX", "value": "...", "delta": "...", "icon": "eco", "tone": "accent", "basis": "..." }, { "label": "SYSTEM ALERTS", "value": "...", "delta": "...", "icon": "warning", "tone": "danger", "basis": "..." } ],
+    "projects": [ { "title": "...", "location": "...", "status": "...", "statusTone": "accent|warning|cyan|danger", "gasDemand": "...", "innovation": "...", "quote": "...", "atcConnection": true|false, "icon": "material-symbol-name", "category": "construction|renewable|sustainability", "basis": "what the status and figures rest on", "sources": [ { "title": "...", "url": "https://exact-article-url-from-search" } ] } ],
     "territories": [ { "country": "...", "projects": 0, "innovationPct": 0-100, "sector": "...", "opportunity": "HIGH|MEDIUM|EMERGING", "trend": "up|down|flat" } ]
   }
 }
+
+IMPORTANT: every project must cite the article(s) it comes from in "sources". Give "sources" on any KPI you can back with an article; a KPI without sources is shown to readers as an estimate.
 
 IMPORTANT: every "url" in "sources" must be the exact, real URL of a specific article you found via web_search — not an outlet homepage and not a fabricated URL. Only cite these domains: ${allowedDomainsForPrompt()}. Sources linking anywhere else are removed automatically. Do not use Reuters.
 

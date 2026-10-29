@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TONE_BG, TONE_CHIP } from "@/lib/tone";
-import { getDashboardData, getIndustrySummaryData, getProjectTrackerData, getMarketTicker } from "@/lib/api";
+import { getDashboardData, getIndustrySummaryData, getProjectTrackerData, getMarketTicker, getDataSources } from "@/lib/api";
 import { SHOW_GEOPOLITICAL } from "@/lib/features";
 import { safeUrl } from "@/lib/safe-url";
 import { countryIso } from "@/lib/flags";
@@ -11,6 +11,8 @@ import KpiBand from "@/components/kpi-band";
 import Panel from "@/components/panel";
 import InsightPopover from "@/components/insight-popover";
 import { RADAR_TIER } from "@/lib/methodology";
+import { provenanceOf, sectionProvenance } from "@/lib/provenance";
+import ProvenanceTag from "@/components/provenance-tag";
 
 const OPPORTUNITY_BAR: Record<string, string> = {
   HIGH: "bg-accent",
@@ -24,11 +26,12 @@ export default async function OverviewPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const [dashboard, industry, tracker, ticker] = await Promise.all([
+  const [dashboard, industry, tracker, ticker, live] = await Promise.all([
     getDashboardData(),
     getIndustrySummaryData(),
     getProjectTrackerData(),
     getMarketTicker(),
+    getDataSources(),
   ]);
   const { geoPulse, industryWeekly, leadershipMoves, marketSeries, projectHighlights, opportunityRadar } = dashboard;
   const kpis = SHOW_GEOPOLITICAL ? dashboard.kpis : dashboard.kpis.filter((kpi) => kpi.label !== "Geopolitical Risk");
@@ -50,7 +53,7 @@ export default async function OverviewPage({
 
   return (
     <div className="flex flex-col gap-7">
-      <KpiBand items={kpis} />
+      <KpiBand items={kpis} live={live.dashboard} />
 
       {SHOW_GEOPOLITICAL && (
         <Panel title="Geopolitical pulse" aside={<span className="eyebrow">{filteredGeoPulse.length} items</span>}>
@@ -79,14 +82,14 @@ export default async function OverviewPage({
           }
         >
           <p className="-mt-3 text-[13px] text-ink-muted">Competitor strength by country, and where Gulf Cryo has room to grow</p>
-          <CompetitorHeatmap rows={industry.competitors} />
+          <CompetitorHeatmap rows={industry.competitors} live={live.industry} />
         </Panel>
 
         <Panel
           id="market-data"
           className="lg:col-span-4 scroll-mt-24"
           title="Market movers"
-          aside={<span className={`eyebrow ${ticker.live ? "text-positive" : "text-warning"}`}>{ticker.live ? "Live" : "Sample"}</span>}
+          aside={<ProvenanceTag value={ticker.live ? "sourced" : "sample"} />}
         >
           <div className="flex flex-col divide-y divide-border -my-2">
             {marketSeries.map((series) => {
@@ -150,7 +153,7 @@ export default async function OverviewPage({
           ) : (
             <div className="flex flex-col gap-3">
               {leadershipMoves.map((appointment, i) => (
-                <LeadershipCard key={i} appointment={appointment} />
+                <LeadershipCard key={i} appointment={appointment} live={live.dashboard} />
               ))}
             </div>
           )}
@@ -173,7 +176,10 @@ export default async function OverviewPage({
                   <span className="text-positive">
                     {item.tag} · {item.region}
                   </span>
-                  <span>{item.source}</span>
+                  <span className="flex items-center gap-2">
+                    <ProvenanceTag value={provenanceOf(item, live.dashboard)} />
+                    {item.source}
+                  </span>
                 </span>
                 <span className="text-[15px] font-semibold leading-snug text-ink group-hover:text-accent">{item.title}</span>
                 <span className="text-[13px] text-ink-muted line-clamp-2">{item.desc}</span>
@@ -190,6 +196,7 @@ export default async function OverviewPage({
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="font-semibold text-ink">{entry.country}</span>
                   <span className="text-[12px] text-ink-muted line-clamp-2">{entry.sector}</span>
+                  <ProvenanceTag value={provenanceOf(entry, live.dashboard)} className="mt-0.5" />
                 </div>
                 <InsightPopover
                   insight={{
@@ -197,6 +204,7 @@ export default async function OverviewPage({
                     definition: RADAR_TIER[entry.tier],
                     basis: entry.basis,
                     sources: entry.sources,
+                    provenance: provenanceOf(entry, live.dashboard),
                   }}
                   label={`Why ${entry.country} is rated ${entry.tier}`}
                   className={`font-mono text-[11px] font-semibold uppercase rounded px-1 underline decoration-dotted underline-offset-2 ${entry.tier === "High" ? "text-accent" : "text-ink-muted"}`}
@@ -224,7 +232,10 @@ export default async function OverviewPage({
               <div key={project.title} className="contents">
                 <div className="flex flex-col min-w-0">
                   <span className="font-semibold text-ink truncate">{project.title}</span>
-                  <span className="text-[13px] text-ink-muted truncate">{project.location}</span>
+                  <span className="flex items-center gap-2 text-[13px] text-ink-muted min-w-0">
+                    <span className="truncate">{project.location}</span>
+                    <ProvenanceTag value={provenanceOf(project, live.dashboard)} />
+                  </span>
                 </div>
                 <div className="h-3 rounded-full bg-panel-highest">
                   <div className={`h-3 rounded-full ${TONE_BG[project.tone]}`} style={{ width: `${project.progress}%` }} />
@@ -235,7 +246,7 @@ export default async function OverviewPage({
           </div>
         </Panel>
 
-        <Panel className="lg:col-span-4" title="Projects by territory" aside={<span className="eyebrow">Active count</span>}>
+        <Panel className="lg:col-span-4" title="Projects by territory" aside={<ProvenanceTag value={sectionProvenance(live.projects)} />}>
           <div className="grid gap-2.5 items-end h-36" style={{ gridTemplateColumns: `repeat(${tracker.territories.length}, minmax(0, 1fr))` }}>
             {tracker.territories.map((t) => (
               <div key={t.country} className="flex flex-col items-center justify-end gap-1.5 h-36">
