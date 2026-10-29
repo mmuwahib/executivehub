@@ -19,11 +19,13 @@ Respond with a single JSON object (no markdown, no commentary) matching this exa
 }
 
 Rules (items breaking them are discarded automatically):
-- Return 5–7 articles. Make exactly one "featured".
+- Return 3–7 articles (fewer is fine if that is all you can find). Make exactly one "featured".
 - "tag" is exactly one of: ${TECH_TOPICS.join(", ")}.
 - At most ${MAX_PER_OUTLET} articles from any one outlet; spread the rest across different outlets.
 - "publishedAt" is the real publication date from the page or search result, within the last 21 days. No background, company-profile or announcement pieces from earlier years.
 - "sourceUrl" is the exact URL of the specific article, from these domains only: ${allowedDomainsForPrompt()}. Not a homepage, not fabricated. Do not use Reuters.
+
+If you reach the web search limit, stop searching and answer with what you have found so far; never reply without the JSON object.
 
 Your FINAL message must contain ONLY the JSON object and nothing else.`;
 
@@ -43,7 +45,7 @@ export async function techRefresh(myTimer: Timer, context: InvocationContext): P
 
   let text: string;
   try {
-    const research = await researchJson(apiKey, TECH_PROMPT, 6, (m) => context.log(`techRefresh: ${m}`));
+    const research = await researchJson(apiKey, TECH_PROMPT, 10, (m) => context.log(`techRefresh: ${m}`));
     text = research.text;
     context.log(`techRefresh usage: ${formatUsage(research.usage)}`);
   } catch (err) {
@@ -97,6 +99,9 @@ export async function techRefresh(myTimer: Timer, context: InvocationContext): P
 }
 
 app.timer("techRefresh", {
+  // No catch-up run for schedules missed while the host was down: a restart
+  // after a gap fired every refresh at once (and doubled spend) in testing.
+  useMonitor: false,
   schedule: "0 0 4 * * 0",
   handler: techRefresh,
 });

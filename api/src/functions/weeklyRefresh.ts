@@ -37,6 +37,8 @@ IMPORTANT: every project must cite the article(s) it comes from in "sources". Gi
 
 IMPORTANT: every "url" in "sources" must be the exact, real URL of a specific article you found via web_search — not an outlet homepage and not a fabricated URL. Only cite these domains: ${allowedDomainsForPrompt()}. Sources linking anywhere else are removed automatically. Do not use Reuters.
 
+If you reach the web search limit, stop searching and answer with what you have found so far; never reply without the JSON object.
+
 Your FINAL message must contain ONLY the JSON object and nothing else — no preamble, no summary of your research process, no markdown code fences, no text before or after it.`;
 
 export async function weeklyRefresh(myTimer: Timer, context: InvocationContext): Promise<void> {
@@ -98,6 +100,9 @@ export async function weeklyRefresh(myTimer: Timer, context: InvocationContext):
 }
 
 app.timer("weeklyRefresh", {
+  // No catch-up run for schedules missed while the host was down: a restart
+  // after a gap fired every refresh at once (and doubled spend) in testing.
+  useMonitor: false,
   schedule: "0 0 3 * * 0",
   handler: weeklyRefresh,
 });

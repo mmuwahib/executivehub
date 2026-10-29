@@ -50,6 +50,8 @@ IMPORTANT: "leadershipMoves" are only genuine executive appointments, promotions
 
 IMPORTANT: Do not use Reuters as a source. Pick the real English-language outlet native to the story's own country: Khaleej Times only for UAE-datelined stories, Arab News for Saudi Arabia-datelined stories, Al Jazeera for pan-regional or cross-border stories with no single-country angle. Never use an outlet from a different country than the story it's attached to.
 
+If you reach the web search limit, stop searching and answer with what you have found so far; never reply without the JSON object.
+
 Your FINAL message must contain ONLY the JSON object and nothing else — no preamble, no summary of your research process, no markdown code fences, no text before or after it.`;
 
 export async function dailyRefresh(myTimer: Timer, context: InvocationContext): Promise<void> {
@@ -112,6 +114,9 @@ export async function dailyRefresh(myTimer: Timer, context: InvocationContext): 
 }
 
 app.timer("dailyRefresh", {
+  // No catch-up run for schedules missed while the host was down: a restart
+  // after a gap fired every refresh at once (and doubled spend) in testing.
+  useMonitor: false,
   schedule: "0 0 3 * * *",
   handler: dailyRefresh,
 });
